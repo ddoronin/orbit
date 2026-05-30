@@ -1,13 +1,13 @@
-import { Actor, Handle, OrbitActor, type ActorContext } from '@orbit/app';
-import type { MemberRole, PageSummary, WorkspaceState } from './types.js';
+import { Actor, Handle, OrbitActor } from "@orbit/app";
+import type { MemberRole, PageSummary, WorkspaceState } from "./types.js";
 
-@Actor('Workspace')
+@Actor("Workspace")
 export class WorkspaceActor extends OrbitActor<WorkspaceState> {
   initialState(): WorkspaceState {
     return {
-      workspaceId: '',
-      name: '',
-      ownerId: '',
+      workspaceId: "",
+      name: "",
+      ownerId: "",
       members: {},
       pages: {},
       rootPageIds: [],
@@ -15,42 +15,79 @@ export class WorkspaceActor extends OrbitActor<WorkspaceState> {
     };
   }
 
-  @Handle('workspace.create')
-  async create(
-    p: { name: string; ownerId: string },
-    ctx: ActorContext,
-  ): Promise<WorkspaceState> {
-    if (this.state.workspaceId) throw new Error('Workspace already initialized');
+  // The caller-supplied id is also what we use to look the workspace up later,
+  // so the actor must store that name rather than `ctx.actorId` (which is the
+  // hashed Durable Object id and would not round-trip through `idFromName`).
+  @Handle("workspace.create")
+  async create(p: {
+    workspaceId: string;
+    name: string;
+    ownerId: string;
+  }): Promise<WorkspaceState> {
+    if (this.state.workspaceId)
+      throw new Error("Workspace already initialized");
+    return this.initializeWorkspace(p);
+  }
+
+  @Handle("workspace.ensureInitialized")
+  async ensureInitialized(p: {
+    workspaceId: string;
+    name: string;
+    ownerId: string;
+  }): Promise<WorkspaceState> {
+    if (this.state.workspaceId) return this.state;
+    return this.initializeWorkspace(p);
+  }
+
+  @Handle("workspace.ensureMember")
+  async ensureMember(p: {
+    userId: string;
+    role?: Exclude<MemberRole, "owner">;
+  }): Promise<WorkspaceState> {
+    if (!this.state.workspaceId) throw new Error("Workspace not initialized");
+    if (!this.state.members[p.userId]) {
+      this.updateState((s) => {
+        s.members[p.userId] = p.role ?? "editor";
+      });
+    }
+    return this.state;
+  }
+
+  private initializeWorkspace(p: {
+    workspaceId: string;
+    name: string;
+    ownerId: string;
+  }): WorkspaceState {
     this.updateState((s) => {
-      s.workspaceId = ctx.actorId;
+      s.workspaceId = p.workspaceId;
       s.name = p.name;
       s.ownerId = p.ownerId;
-      s.members = { [p.ownerId]: 'owner' };
+      s.members = { [p.ownerId]: "owner" };
       s.createdAt = Date.now();
     });
     return this.state;
   }
 
-  @Handle('workspace.invite')
+  @Handle("workspace.invite")
   async invite(p: {
     inviterId: string;
     userId: string;
-    role: Exclude<MemberRole, 'owner'>;
+    role: Exclude<MemberRole, "owner">;
   }): Promise<void> {
-    this.assertRole(p.inviterId, ['owner', 'editor']);
+    this.assertRole(p.inviterId, ["owner", "editor"]);
     this.updateState((s) => {
       s.members[p.userId] = p.role;
     });
   }
 
-  @Handle('workspace.createPage')
+  @Handle("workspace.createPage")
   async createPage(p: {
     authorId: string;
     pageId: string;
     title: string;
     parentPageId?: string | null;
   }): Promise<PageSummary> {
-    this.assertRole(p.authorId, ['owner', 'editor']);
+    this.assertRole(p.authorId, ["owner", "editor"]);
     const summary: PageSummary = {
       pageId: p.pageId,
       title: p.title,
@@ -65,7 +102,7 @@ export class WorkspaceActor extends OrbitActor<WorkspaceState> {
     return summary;
   }
 
-  @Handle('workspace.updatePageSummary')
+  @Handle("workspace.updatePageSummary")
   async updatePageSummary(p: {
     pageId: string;
     title?: string;
@@ -81,7 +118,7 @@ export class WorkspaceActor extends OrbitActor<WorkspaceState> {
     });
   }
 
-  @Handle('workspace.listPages')
+  @Handle("workspace.listPages")
   async listPages(q: { parentPageId?: string | null }): Promise<PageSummary[]> {
     const parent = q.parentPageId ?? null;
     return Object.values(this.state.pages)

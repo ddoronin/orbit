@@ -24,7 +24,7 @@ A tutorial that teaches the framework. By the end you'll understand why Orbit lo
 
 ## What we're building
 
-A simplified Notion: a Cloudflare Worker that serves a REST API plus a WebSocket for real-time collaborative editing. Users belong to workspaces. Workspaces own pages. Pages are trees of blocks (paragraphs, headings, to-dos, code blocks). Multiple users can edit the same page at the same time and see each other's cursors.
+A simplified Notion: a Cloudflare Worker that serves a REST API plus a WebSocket for real-time collaborative editing, **and** a small SPA in `public/` that's served by the same Worker via Cloudflare's static-assets layer. Users belong to workspaces. Workspaces own pages. Pages are trees of blocks (paragraphs, headings, to-dos, code blocks). Multiple users can edit the same page at the same time and see each other's cursors.
 
 You'll write three kinds of code:
 
@@ -32,7 +32,9 @@ You'll write three kinds of code:
 - **Controllers** — REST endpoints that read input, talk to actors, return JSON.
 - **One application class** — declares actors, controllers, and which URLs map to WebSocket connections.
 
-That's it. No services unless you want them, no modules, no plugins, no global setup file. The whole "wiring" portion of the app fits in 21 lines.
+That's it. No services unless you want them, no modules, no plugins, no global setup file. The whole "wiring" portion of the app fits in ~20 lines.
+
+> Just want to run it? Jump to [Running the example locally](#running-the-example-locally) — it's one command.
 
 ---
 
@@ -61,12 +63,17 @@ Storage primitives (KV for sessions, D1 for relational data, R2 for blobs) are s
 
 ```
 src/
-├── index.ts                  # 21 lines: @OrbitApp + createWorker
+├── index.ts                  # @OrbitApp + createWorker
 ├── types.ts                  # Block, PageState, WorkspaceState
+├── auth.controller.ts        # POST /auth/login (passwordless dev login)
 ├── workspace.actor.ts        # Workspace DO
 ├── workspace.controller.ts   # /workspaces/* REST endpoints
 ├── page.actor.ts             # Page DO with broadcast + presence
 └── page.controller.ts        # /pages/* REST endpoints
+public/
+├── index.html                # SPA shell
+├── styles.css                # Notion-ish styling
+└── app.js                    # Vanilla JS: REST + raw WebSocket
 ```
 
 There are no `*.module.ts` files, no `*.service.ts` files, no DI configuration files. The actors are the service layer.
@@ -78,17 +85,19 @@ There are no `*.module.ts` files, no `*.service.ts` files, no DI configuration f
 Open `src/page.actor.ts`. Here's the trimmed shape:
 
 ```ts
-import { Actor, Handle, OrbitActor } from '@orbit/app';
+import { Actor, Handle, OrbitActor } from "@orbit/app";
 
-@Actor('Page')
+@Actor("Page")
 export class PageActor extends OrbitActor<PageState> {
   initialState(): PageState {
-    return { title: 'Untitled', blocks: {}, /* … */ };
+    return { title: "Untitled", blocks: {} /* … */ };
   }
 
-  @Handle('page.title.set')
+  @Handle("page.title.set")
   async setTitle(p: { title: string }) {
-    this.updateState((s) => { s.title = p.title; });
+    this.updateState((s) => {
+      s.title = p.title;
+    });
   }
 }
 ```
@@ -146,15 +155,25 @@ Because `@Actor` registers a built-in handler called `__orbit.snapshot__`, every
 Open `src/page.controller.ts`. Controllers are how the outside world reaches actors.
 
 ```ts
-import { Resource, Get, Post, Param, Body, Auth, Inject,
-         ActorRegistry, ACTOR_REGISTRY_TOKEN, bearer } from '@orbit/app';
+import {
+  Resource,
+  Get,
+  Post,
+  Param,
+  Body,
+  Auth,
+  Inject,
+  ActorRegistry,
+  ACTOR_REGISTRY_TOKEN,
+  bearer,
+} from "@orbit/app";
 
-@Resource('/pages', { guards: [bearer('SESSIONS')] })
+@Resource("/pages", { guards: [bearer("SESSIONS")] })
 export class PageController {
   constructor(@Inject(ACTOR_REGISTRY_TOKEN) private actors: ActorRegistry) {}
 
-  @Get('/:id')
-  async show(@Param('id') id: string, @Auth() me: Session): Promise<PageState> {
+  @Get("/:id")
+  async show(@Param("id") id: string, @Auth() me: Session): Promise<PageState> {
     const page = await this.actors.ref(PageActor, id).snapshot<PageState>();
     if (!page.pageId) throw new NotFoundException(`Page ${id}`);
     return page;
@@ -204,7 +223,9 @@ Three steps in one line:
 If you wanted to call your own handler instead:
 
 ```ts
-await this.actors.ref(PageActor, id).call('page.block.insert', { blockId, type, text });
+await this.actors
+  .ref(PageActor, id)
+  .call("page.block.insert", { blockId, type, text });
 ```
 
 `call` awaits a typed result. `cast` sends without awaiting (still resolves when the actor ACKs). `connect(request)` forwards a WebSocket upgrade.
@@ -216,19 +237,25 @@ await this.actors.ref(PageActor, id).call('page.block.insert', { blockId, type, 
 This is the whole entry point of the application, `src/index.ts`:
 
 ```ts
-import { OrbitApp, createWorker, bearer } from '@orbit/app';
-import { WorkspaceActor } from './workspace.actor.js';
-import { PageActor } from './page.actor.js';
-import { WorkspaceController } from './workspace.controller.js';
-import { PageController } from './page.controller.js';
+import { OrbitApp, createWorker, bearer } from "@orbit/app";
+import { WorkspaceActor } from "./workspace.actor.js";
+import { PageActor } from "./page.actor.js";
+import { WorkspaceController } from "./workspace.controller.js";
+import { PageController } from "./page.controller.js";
+import { AuthController } from "./auth.controller.js";
 
 @OrbitApp({
   actors: [WorkspaceActor, PageActor],
-  controllers: [WorkspaceController, PageController],
+  controllers: [AuthController, WorkspaceController, PageController],
   channels: [
-    { url: '/pages/:id/socket', actor: PageActor, idParam: 'id', guards: [bearer('SESSIONS')] },
+    {
+      url: "/pages/:id/socket",
+      actor: PageActor,
+      idParam: "id",
+      guards: [bearer("SESSIONS")],
+    },
   ],
-  bindings: { KV: 'SESSIONS', D1: 'DB' },
+  bindings: { KV: "SESSIONS" },
 })
 export class NotionApp {}
 
@@ -237,19 +264,19 @@ export default worker;
 export const { Workspace, Page } = worker;
 ```
 
-That's 21 lines and it's the entire wiring layer. Let's read it carefully.
+That's the entire wiring layer. Let's read it carefully.
 
 ### `@OrbitApp({ ... })`
 
 The single composition root. Everything the framework needs to know about your app is here.
 
-| Field         | What it does                                                                 |
-|---------------|------------------------------------------------------------------------------|
-| `actors`      | Classes decorated with `@Actor`. Each becomes a Durable Object class on the worker. Their DI registrations are auto-added. |
-| `controllers` | Classes decorated with `@Controller` or `@Resource`. Their routes are auto-registered onto the worker's router. |
+| Field         | What it does                                                                                                                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `actors`      | Classes decorated with `@Actor`. Each becomes a Durable Object class on the worker. Their DI registrations are auto-added.                               |
+| `controllers` | Classes decorated with `@Controller` or `@Resource`. Their routes are auto-registered onto the worker's router.                                          |
 | `channels`    | URL patterns that map to a specific actor — when a client connects via WebSocket, the framework finds the right actor instance and forwards the upgrade. |
-| `providers`   | (Not used here) Custom services. Plain `@Injectable` classes or `{ provide, useFactory, inject }` objects. |
-| `bindings`    | Names env bindings should bind under: `{ KV: 'SESSIONS' }` means `env.SESSIONS` is exposed via `KV_TOKEN`. |
+| `providers`   | (Not used here) Custom services. Plain `@Injectable` classes or `{ provide, useFactory, inject }` objects.                                               |
+| `bindings`    | Names env bindings should bind under: `{ KV: 'SESSIONS' }` means `env.SESSIONS` is exposed via `KV_TOKEN`.                                               |
 
 There are no nested modules. Add a new feature by adding to these arrays. Delete a feature by removing from these arrays.
 
@@ -298,8 +325,13 @@ In `index.ts`:
 
 ```ts
 channels: [
-  { url: '/pages/:id/socket', actor: PageActor, idParam: 'id', guards: [bearer('SESSIONS')] },
-]
+  {
+    url: "/pages/:id/socket",
+    actor: PageActor,
+    idParam: "id",
+    guards: [bearer("SESSIONS")],
+  },
+];
 ```
 
 This says: when a client does a WebSocket upgrade to `/pages/abc-123/socket`, find the `PageActor` instance with ID `abc-123` and forward the upgrade to its DO. The `bearer` guard runs first — if the session lookup fails, the upgrade is rejected with 401.
@@ -311,7 +343,12 @@ The client now has a WebSocket connected directly to the page's DO. From here:
 The actor's built-in WebSocket handler parses incoming JSON as `{ type, payload }` and dispatches to a matching `@Handle`. So a browser writing:
 
 ```js
-socket.send(JSON.stringify({ type: 'page.block.insert', payload: { blockId: '...', type: 'paragraph', text: 'hi' } }));
+socket.send(
+  JSON.stringify({
+    type: "page.block.insert",
+    payload: { blockId: "...", type: "paragraph", text: "hi" },
+  }),
+);
 ```
 
 triggers `PageActor.insertBlock(payload)` in the DO.
@@ -321,7 +358,7 @@ triggers `PageActor.insertBlock(payload)` in the DO.
 Look at the bottom of `insertBlock`:
 
 ```ts
-this.broadcast('page.block.inserted', { block, version: this.state.version });
+this.broadcast("page.block.inserted", { block, version: this.state.version });
 ```
 
 `broadcast` sends a JSON frame to every connected WebSocket — so every other user editing this page sees the new block instantly.
@@ -384,16 +421,24 @@ The state and the schedule live in the same DO. You didn't deploy a cron job, yo
 Open `src/workspace.actor.ts`. It's the same shape as `PageActor` but holds workspace metadata.
 
 ```ts
-@Actor('Workspace')
+@Actor("Workspace")
 export class WorkspaceActor extends OrbitActor<WorkspaceState> {
   initialState(): WorkspaceState {
-    return { workspaceId: '', name: '', ownerId: '', members: {}, pages: {}, /* … */ };
+    return {
+      workspaceId: "",
+      name: "",
+      ownerId: "",
+      members: {},
+      pages: {} /* … */,
+    };
   }
 
-  @Handle('workspace.invite')
+  @Handle("workspace.invite")
   async invite(p: { inviterId; userId; role }): Promise<void> {
-    this.assertRole(p.inviterId, ['owner', 'editor']);
-    this.updateState((s) => { s.members[p.userId] = p.role; });
+    this.assertRole(p.inviterId, ["owner", "editor"]);
+    this.updateState((s) => {
+      s.members[p.userId] = p.role;
+    });
   }
 }
 ```
@@ -407,10 +452,16 @@ Why? Because actors are addressable by any code in the worker. If you add a new 
 When a user creates a page (in `PageController.create`):
 
 ```ts
-const summary = await this.actors.ref(WorkspaceActor, body.workspaceId)
-  .call('workspace.createPage', { authorId: me.userId, pageId, title, parentPageId });
+const summary = await this.actors
+  .ref(WorkspaceActor, body.workspaceId)
+  .call("workspace.createPage", {
+    authorId: me.userId,
+    pageId,
+    title,
+    parentPageId,
+  });
 
-return this.actors.ref(PageActor, summary.pageId).call('page.init', {
+return this.actors.ref(PageActor, summary.pageId).call("page.init", {
   pageId: summary.pageId,
   workspaceId: body.workspaceId,
   title: body.title,
@@ -451,16 +502,28 @@ Controllers reach the session two ways:
 - **`@Auth() me: Session` parameter** — most ergonomic.
 - **`authOf<Session>(ctx)`** — for use inside middleware/guards/helpers.
 
-To seed a session for local testing, write a value into the KV namespace yourself:
+For local development, the bundled `AuthController` provides a passwordless dev login:
 
 ```sh
-wrangler kv:key put --binding=SESSIONS \
-  "session:test-token" '{"userId":"u1","displayName":"Alice"}'
+curl -X POST http://localhost:8787/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Alice"}'
+# => { "token": "...", "session": { "userId": "alice", "displayName": "Alice" } }
 ```
 
-Now `Authorization: Bearer test-token` is a valid session. In production you'd issue tokens via a login endpoint that writes the same shape.
+It mints a token, writes `session:<token>` into the SESSIONS KV, and hands the token back. The SPA in `public/` calls this endpoint and stores the token in `localStorage`. In production you'd swap this out for a real auth provider that produces session entries in the same shape.
 
-### Auth on WebSockets
+### Auth on WebSockets, in browsers
+
+Browsers can't set custom headers on WebSocket upgrades, so the `bearer()` guard also accepts the token via an `?access_token=…` query param (RFC 6750 §2.3). The frontend connects with:
+
+```js
+new WebSocket(`/pages/${pageId}/socket?access_token=${token}`);
+```
+
+and the same guard authenticates both REST and WS.
+
+### Why guards run on WebSocket upgrades
 
 Cloudflare evaluates HTTP middleware (including guards) on the upgrade request. So `bearer('SESSIONS')` on a WebSocket route works the same as on a REST route — the upgrade is rejected before any frames are exchanged. After the connection is open, the session payload is no longer in scope (the actor doesn't see HTTP headers), so if you need the user identity inside the actor, send it as part of the first frame or include it in the URL.
 
@@ -472,40 +535,40 @@ A glossary you can return to.
 
 ### Decorators you'll use most
 
-| Decorator                       | Where                  | Purpose                                                  |
-|---------------------------------|------------------------|----------------------------------------------------------|
-| `@OrbitApp({...})`              | One class per app      | Declare the entire application                           |
-| `@Actor(name)`                  | Actor class            | Mark as a Durable Object                                 |
-| `@Handle(type)`                 | Actor method           | Register a message handler                               |
-| `@OnAlarm()`                    | Actor method           | Register the alarm callback                              |
-| `@Resource(prefix, { guards })` | Controller class       | `@Controller + @Injectable + class-level guards`         |
-| `@Controller(prefix)`           | Controller class       | Declare URL prefix                                       |
-| `@Get/@Post/@Patch/@Delete`     | Controller method      | Declare HTTP route                                       |
-| `@Param/@Query/@Body/@Header`   | Controller parameter   | Inject pieces of the request                             |
-| `@Auth()`                       | Controller parameter   | Inject the session attached by a guard                   |
-| `@Injectable()`                 | Service class          | Make resolvable from DI                                  |
-| `@Inject(token)`                | Constructor parameter  | Say which token to resolve                               |
-| `@UseGuard(g)`                  | Controller method      | Add a guard to just one route                            |
+| Decorator                       | Where                 | Purpose                                          |
+| ------------------------------- | --------------------- | ------------------------------------------------ |
+| `@OrbitApp({...})`              | One class per app     | Declare the entire application                   |
+| `@Actor(name)`                  | Actor class           | Mark as a Durable Object                         |
+| `@Handle(type)`                 | Actor method          | Register a message handler                       |
+| `@OnAlarm()`                    | Actor method          | Register the alarm callback                      |
+| `@Resource(prefix, { guards })` | Controller class      | `@Controller + @Injectable + class-level guards` |
+| `@Controller(prefix)`           | Controller class      | Declare URL prefix                               |
+| `@Get/@Post/@Patch/@Delete`     | Controller method     | Declare HTTP route                               |
+| `@Param/@Query/@Body/@Header`   | Controller parameter  | Inject pieces of the request                     |
+| `@Auth()`                       | Controller parameter  | Inject the session attached by a guard           |
+| `@Injectable()`                 | Service class         | Make resolvable from DI                          |
+| `@Inject(token)`                | Constructor parameter | Say which token to resolve                       |
+| `@UseGuard(g)`                  | Controller method     | Add a guard to just one route                    |
 
 ### What gets injected
 
-| Token                 | Comes from                                  |
-|-----------------------|---------------------------------------------|
-| `KV_TOKEN`            | The KV binding named in `@OrbitApp.bindings.KV` |
-| `D1_TOKEN`            | The D1 binding named in `@OrbitApp.bindings.D1` |
-| `R2_TOKEN`            | The R2 binding named in `@OrbitApp.bindings.R2` |
-| `ENV_TOKEN`           | The whole `env` object                      |
-| `ACTOR_REGISTRY_TOKEN`| The `ActorRegistry` singleton, auto-registered |
-| `EXECUTION_CTX_TOKEN` | The Worker `ExecutionContext`               |
-| `REQUEST_TOKEN`       | The current `Request` (REQUEST scope only)  |
+| Token                  | Comes from                                      |
+| ---------------------- | ----------------------------------------------- |
+| `KV_TOKEN`             | The KV binding named in `@OrbitApp.bindings.KV` |
+| `D1_TOKEN`             | The D1 binding named in `@OrbitApp.bindings.D1` |
+| `R2_TOKEN`             | The R2 binding named in `@OrbitApp.bindings.R2` |
+| `ENV_TOKEN`            | The whole `env` object                          |
+| `ACTOR_REGISTRY_TOKEN` | The `ActorRegistry` singleton, auto-registered  |
+| `EXECUTION_CTX_TOKEN`  | The Worker `ExecutionContext`                   |
+| `REQUEST_TOKEN`        | The current `Request` (REQUEST scope only)      |
 
 ### `ActorRef` methods
 
 ```ts
-ref.call(type, payload)      // request/response, typed
-ref.cast(type, payload)      // fire-and-forget, awaits ACK
-ref.snapshot<S>()            // built-in, returns current state
-ref.connect(request)         // forward a WebSocket upgrade
+ref.call(type, payload); // request/response, typed
+ref.cast(type, payload); // fire-and-forget, awaits ACK
+ref.snapshot<S>(); // built-in, returns current state
+ref.connect(request); // forward a WebSocket upgrade
 ```
 
 ### `OrbitActor` methods you call from handlers
@@ -534,68 +597,72 @@ onDeactivate(): Promise<void>     // optional; best-effort before eviction
 
 ## Running the example locally
 
-You need wrangler installed and Node 18+.
+You need **Node.js 23+** and npm. Wrangler is installed as a dev dependency. An `.nvmrc` is included — run `nvm use` in this directory if you use nvm.
 
 ```sh
 # from the orbit repo root
 npm install
-cd packages/example-notion
+cd packages/example-notion && nvm use   # optional, if you use nvm
+npm run dev
 ```
 
-Edit `wrangler.toml` and create real bindings:
+That single command does three things:
+
+1. **Compiles the TypeScript** — `wrangler dev` runs the `[build]` step from `wrangler.toml` (`npx tsc`) and re-runs it whenever files in `src/` change.
+2. **Boots `wrangler dev` on `http://localhost:8787`** with local-mode Durable Objects and an in-memory KV namespace for sessions.
+3. **Serves the SPA** in `public/` (`index.html`, `styles.css`, `app.js`) via Cloudflare's static-assets layer. Any GET that doesn't match a file falls through to the Worker (so `/auth/login`, `/workspaces/*`, `/pages/*`, and the `/pages/:id/socket` WS upgrade all reach the orbit router).
+
+Open <http://localhost:8787> in your browser. Type any display name and hit **Enter** — the SPA calls `POST /auth/login`, gets a token, joins the shared workspace, and you're in. Open a second window with a different name to see live presence and real-time block updates.
+
+### What's happening behind the scenes
+
+- **`POST /auth/login {displayName}`** — `AuthController` mints a random token, writes `session:<token> → {userId, displayName}` into the SESSIONS KV (30-day TTL), and returns `{ token, session }`. The SPA persists `token` in `localStorage`.
+- **`POST /workspaces`** / **`GET /workspaces/:id`** — initializes or fetches the shared workspace DO. Any authenticated user is added to it automatically, so everyone lands in the same docs space.
+- **`POST /pages`** — creates a new page (initializes its DO and indexes it on the workspace).
+- **WebSocket** — the SPA opens `ws://localhost:8787/pages/:id/socket?access_token=<token>` and sends `{ "type": "page.presence.update", "payload": { … } }` and friends. Other connected clients receive `{ "event": "page.block.inserted", "payload": …, "topic": "Page" }` etc.
+
+### curl smoke tests (optional)
 
 ```sh
-npx wrangler kv:namespace create SESSIONS
-npx wrangler d1 create orbit-notion
-# paste the returned IDs into wrangler.toml
-```
-
-Seed a session so requests authenticate:
-
-```sh
-npx wrangler kv:key put --binding=SESSIONS \
-  "session:test-token" '{"userId":"u1","displayName":"Alice"}'
-```
-
-Run the dev server:
-
-```sh
-npx wrangler dev
-```
-
-Smoke tests:
-
-```sh
-# Create a workspace
-curl http://localhost:8787/workspaces \
-  -H "Authorization: Bearer test-token" \
+TOKEN=$(curl -s -X POST http://localhost:8787/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"name":"My workspace"}'
+  -d '{"displayName":"Alice"}' | jq -r .token)
 
-# Use the returned workspaceId to create a page
-curl http://localhost:8787/pages \
-  -H "Authorization: Bearer test-token" \
-  -H "Content-Type: application/json" \
-  -d '{"workspaceId":"<ws-id>","title":"Hello"}'
+WS=$(curl -s http://localhost:8787/workspaces \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"My workspace"}' | jq -r .workspaceId)
 
-# Open a websocket (use any wscat or browser)
-wscat -c "ws://localhost:8787/pages/<page-id>/socket" \
-  -H "Authorization: Bearer test-token"
+curl -s http://localhost:8787/pages \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "{\"workspaceId\":\"$WS\",\"title\":\"Hello\"}"
 ```
 
 Inside the socket, send a block insert:
 
 ```json
-{"type":"page.block.insert","payload":{"blockId":"b1","type":"paragraph","text":"hello"}}
+{
+  "type": "page.block.insert",
+  "payload": { "blockId": "b1", "type": "paragraph", "text": "hello" }
+}
 ```
 
-If you have two clients connected, the second one receives:
+Other clients on the same page receive:
 
 ```json
 {"event":"page.block.inserted","payload":{"block":{...},"version":1},"topic":"Page","ref":null}
 ```
 
 That's the framework's broadcast in action.
+
+### Deploying
+
+Before deploying to Cloudflare, swap the placeholder KV id in `wrangler.toml` for a real one:
+
+```sh
+npx wrangler kv namespace create SESSIONS
+# paste the returned id into the [[kv_namespaces]] block, then:
+npm --workspace @orbit/example-notion run deploy
+```
 
 ---
 

@@ -2,6 +2,18 @@ name = "orbit-notion"
 main = "dist/index.js"
 compatibility_date = "2025-01-01"
 
+# Compile TypeScript before booting the dev server, and recompile on src changes.
+[build]
+command = "npx tsc"
+cwd = "."
+watch_dir = "src"
+
+# Serve the Notion-like SPA from public/. Cloudflare's assets layer handles
+# GET requests that match a file (e.g. /, /styles.css, /app.js); everything
+# else (REST + WS) falls through to the Worker.
+[assets]
+directory = "./public"
+
 [[durable_objects.bindings]]
 name = "Workspace"
 class_name = "Workspace"
@@ -14,11 +26,9 @@ class_name = "Page"
 tag = "v1"
 new_classes = ["Workspace", "Page"]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "orbit-notion"
-database_id = "REPLACE_ME"
-
+# SESSIONS KV stores session:<token> -> {userId, displayName}.
+# In `wrangler dev` local mode (the default) the id is not validated, so this
+# placeholder is fine; replace it with a real namespace id before deploying.
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "REPLACE_ME"
+id = "0000000000000000000000000000000a"

@@ -3,14 +3,15 @@ import { WorkspaceActor } from './workspace.actor.js';
 import { PageActor } from './page.actor.js';
 import { WorkspaceController } from './workspace.controller.js';
 import { PageController } from './page.controller.js';
+import { AuthController } from './auth.controller.js';
 
 @OrbitApp({
   actors: [WorkspaceActor, PageActor],
-  controllers: [WorkspaceController, PageController],
+  controllers: [AuthController, WorkspaceController, PageController],
   channels: [
     { url: '/pages/:id/socket', actor: PageActor, idParam: 'id', guards: [bearer('SESSIONS')] },
   ],
-  bindings: { KV: 'SESSIONS', D1: 'DB' },
+  bindings: { KV: 'SESSIONS' },
 })
 export class NotionApp {}
 

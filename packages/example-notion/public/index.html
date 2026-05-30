@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orbit Notion</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='28'%3E%F0%9F%9B%B0%3C/text%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <section id="login-view" class="login">
+        <div class="login-card">
+          <h1>Orbit Notion</h1>
+          <p class="subtle">A tiny Notion-like demo running on Cloudflare Workers + Durable Objects.</p>
+          <form id="login-form">
+            <label>
+              Display name
+              <input id="login-name" type="text" placeholder="Alice" autocomplete="off" required />
+            </label>
+            <button type="submit">Enter</button>
+          </form>
+          <p class="hint">Open a second browser window with a different name to see live presence.</p>
+        </div>
+      </section>
+
+      <section id="app-view" hidden>
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <div class="me">
+              <span class="avatar" id="me-avatar"></span>
+              <span class="me-name" id="me-name"></span>
+            </div>
+            <button id="logout" class="ghost small" title="Log out">Sign out</button>
+          </div>
+          <div class="workspace-section">
+            <div class="workspace-name" id="workspace-name">Workspace</div>
+            <button id="new-page" class="ghost">+ New page</button>
+          </div>
+          <nav id="page-list" class="page-list"></nav>
+        </aside>
+
+        <main class="page-pane">
+          <div id="page-empty" class="empty">
+            <p>Select a page on the left, or create a new one.</p>
+          </div>
+          <article id="page-view" hidden>
+            <header class="page-header">
+              <div class="presence" id="presence"></div>
+              <input id="page-title" class="page-title" placeholder="Untitled" />
+            </header>
+            <div id="blocks" class="blocks"></div>
+            <button id="add-block" class="ghost add-block">+ Add block</button>
+          </article>
+        </main>
+      </section>
+    </div>
+
+    <template id="block-template">
+      <div class="block" data-block-id="">
+        <div class="block-gutter">
+          <button class="gutter-btn type-btn" title="Change type">¶</button>
+          <button class="gutter-btn delete-btn" title="Delete">×</button>
+        </div>
+        <div class="block-body" contenteditable="true"></div>
+      </div>
+    </template>
+
+    <div id="toast" class="toast" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,14 +1,14 @@
 export type BlockType =
-  | 'paragraph'
-  | 'heading_1'
-  | 'heading_2'
-  | 'heading_3'
-  | 'todo'
-  | 'bulleted_list'
-  | 'numbered_list'
-  | 'code'
-  | 'quote'
-  | 'divider';
+  | "paragraph"
+  | "heading_1"
+  | "heading_2"
+  | "heading_3"
+  | "todo"
+  | "bulleted_list"
+  | "numbered_list"
+  | "code"
+  | "quote"
+  | "divider";
 
 export interface Block {
   id: string;
@@ -37,6 +37,9 @@ export interface PresenceEntry {
   displayName: string;
   color: string;
   cursorBlockId: string | null;
+  cursorOffset: number | null;
+  selectionStartOffset: number | null;
+  selectionEndOffset: number | null;
   lastSeen: number;
 }
 
@@ -48,7 +51,10 @@ export interface PageSummary {
   parentPageId: string | null;
 }
 
-export type MemberRole = 'owner' | 'editor' | 'commenter' | 'viewer';
+export type MemberRole = "owner" | "editor" | "commenter" | "viewer";
+
+export const SHARED_WORKSPACE_ID = "shared-docs";
+export const SHARED_WORKSPACE_NAME = "Shared docs";
 
 export interface WorkspaceState {
   workspaceId: string;

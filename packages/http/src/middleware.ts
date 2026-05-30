@@ -5,6 +5,13 @@
 import { createTraceContext, Logger } from '@orbit/core';
 import type { MiddlewareFn, RequestContext } from './router.js';
 
+// WebSocket upgrade responses (101 + webSocket field) have immutable headers in
+// workerd — any `response.headers.set(...)` throws. Middleware that decorates
+// responses (CORS, security headers, trace id) must skip them.
+function isWebSocketUpgrade(response: Response): boolean {
+  return response.status === 101 || (response as unknown as { webSocket?: unknown }).webSocket != null;
+}
+
 /**
  * CORS middleware.
  */
@@ -28,6 +35,7 @@ export function cors(options: CorsOptions = {}): MiddlewareFn {
     }
 
     const response = await next();
+    if (isWebSocketUpgrade(response)) return response;
     const headers = corsHeaders(origin, methods, allowHeaders, exposeHeaders, maxAge, credentials);
     for (const [key, value] of Object.entries(headers)) {
       response.headers.set(key, value);
@@ -89,8 +97,10 @@ export function requestLogger(): MiddlewareFn {
         duration,
       });
 
-      // Propagate trace ID in response
-      response.headers.set('x-trace-id', trace.traceId);
+      // Propagate trace ID in response (skip for WS upgrades — headers immutable)
+      if (!isWebSocketUpgrade(response)) {
+        response.headers.set('x-trace-id', trace.traceId);
+      }
       return response;
     } catch (err: any) {
       const duration = Date.now() - start;
@@ -111,6 +121,7 @@ export function requestLogger(): MiddlewareFn {
 export function securityHeaders(): MiddlewareFn {
   return async (ctx, next) => {
     const response = await next();
+    if (isWebSocketUpgrade(response)) return response;
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -126,6 +137,7 @@ export function timing(): MiddlewareFn {
   return async (ctx, next) => {
     const start = Date.now();
     const response = await next();
+    if (isWebSocketUpgrade(response)) return response;
     const duration = Date.now() - start;
     response.headers.set('Server-Timing', `total;dur=${duration}`);
     return response;

@@ -1,0 +1,21 @@
+import { OrbitApp, createWorker, bearer } from '@orbit/app';
+import { WorkspaceActor } from './workspace.actor.js';
+import { PageActor } from './page.actor.js';
+import { WorkspaceController } from './workspace.controller.js';
+import { PageController } from './page.controller.js';
+
+@OrbitApp({
+  actors: [WorkspaceActor, PageActor],
+  controllers: [WorkspaceController, PageController],
+  channels: [
+    { url: '/pages/:id/socket', actor: PageActor, idParam: 'id', guards: [bearer('SESSIONS')] },
+  ],
+  bindings: { KV: 'SESSIONS', D1: 'DB' },
+})
+export class NotionApp {}
+
+const worker = createWorker(NotionApp);
+export default worker;
+export const { Workspace, Page } = worker;
+
+export type * from './types.js';

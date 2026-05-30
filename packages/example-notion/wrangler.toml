@@ -1,0 +1,24 @@
+name = "orbit-notion"
+main = "dist/index.js"
+compatibility_date = "2025-01-01"
+
+[[durable_objects.bindings]]
+name = "Workspace"
+class_name = "Workspace"
+
+[[durable_objects.bindings]]
+name = "Page"
+class_name = "Page"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Workspace", "Page"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "orbit-notion"
+database_id = "REPLACE_ME"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "REPLACE_ME"

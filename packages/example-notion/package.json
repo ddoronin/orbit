@@ -1,0 +1,22 @@
+{
+  "name": "@orbit/example-notion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@orbit/app": "*"
+  },
+  "devDependencies": {
+    "@orbit/testing": "*",
+    "typescript": "*",
+    "vitest": "*",
+    "@cloudflare/workers-types": "*"
+  }
+}

@@ -1,35 +1,42 @@
 import {
-  Resource, Post, Body, Inject, ENV_TOKEN,
+  Resource,
+  Post,
+  Body,
+  Inject,
+  KV_TOKEN,
   BadRequestException,
-} from '@orbit/app';
-import type { Session } from './types.js';
-
-interface Env {
-  SESSIONS: KVNamespace;
-}
+  InternalServerErrorException,
+} from "@orbit/app";
+import type { Session } from "./types.js";
 
 /**
  * Passwordless dev login. Mints a session token, writes
- * `session:<token>` → {userId, displayName} into the SESSIONS KV,
+ * `session:<token>` → {userId, displayName} into the ORBIT_NOTION_SESSIONS KV,
  * and returns the token. Suitable for local development; production
  * apps should plug in their real auth provider here.
  */
-@Resource('/auth')
+@Resource("/auth")
 export class AuthController {
-  constructor(@Inject(ENV_TOKEN) private env: Env) {}
+  constructor(@Inject(KV_TOKEN) private sessions: KVNamespace | undefined) {}
 
-  @Post('/login')
+  @Post("/login")
   async login(
     @Body() body: { displayName?: string; userId?: string },
   ): Promise<{ token: string; session: Session }> {
-    const displayName = (body.displayName ?? '').trim();
-    if (!displayName) throw new BadRequestException('displayName is required');
+    const displayName = (body.displayName ?? "").trim();
+    if (!displayName) throw new BadRequestException("displayName is required");
 
     const userId = (body.userId ?? slugify(displayName)) || crypto.randomUUID();
     const session: Session = { userId, displayName };
-    const token = crypto.randomUUID().replace(/-/g, '');
+    const token = crypto.randomUUID().replace(/-/g, "");
 
-    await this.env.SESSIONS.put(`session:${token}`, JSON.stringify(session), {
+    if (!this.sessions) {
+      throw new InternalServerErrorException(
+        "No KV binding configured for sessions",
+      );
+    }
+
+    await this.sessions.put(`session:${token}`, JSON.stringify(session), {
       expirationTtl: 60 * 60 * 24 * 30,
     });
 
@@ -38,5 +45,8 @@ export class AuthController {
 }
 
 function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

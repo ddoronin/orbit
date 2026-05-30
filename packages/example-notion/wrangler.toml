@@ -30,5 +30,5 @@ new_classes = ["Workspace", "Page"]
 # In `wrangler dev` local mode (the default) the id is not validated, so this
 # placeholder is fine; replace it with a real namespace id before deploying.
 [[kv_namespaces]]
-binding = "SESSIONS"
-id = "0000000000000000000000000000000a"
+binding = "ORBIT_NOTION_SESSIONS"
+id = "8319b6c8f62f474f8897687ce0f21eef"

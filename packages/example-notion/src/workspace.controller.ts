@@ -22,7 +22,7 @@ import {
   type WorkspaceState,
 } from "./types.js";
 
-@Resource("/workspaces", { guards: [bearer("SESSIONS")] })
+@Resource("/workspaces", { guards: [bearer("ORBIT_NOTION_SESSIONS")] })
 export class WorkspaceController {
   constructor(@Inject(ACTOR_REGISTRY_TOKEN) private actors: ActorRegistry) {}
 

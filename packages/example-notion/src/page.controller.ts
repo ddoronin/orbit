@@ -26,7 +26,7 @@ import {
   type WorkspaceState,
 } from "./types.js";
 
-@Resource("/pages", { guards: [bearer("SESSIONS")] })
+@Resource("/pages", { guards: [bearer("ORBIT_NOTION_SESSIONS")] })
 export class PageController {
   constructor(@Inject(ACTOR_REGISTRY_TOKEN) private actors: ActorRegistry) {}
 

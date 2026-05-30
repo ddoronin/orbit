@@ -39,6 +39,7 @@ let presenceHeartbeat = null;
 const BLOCK_SAVE_DEBOUNCE_MS = 50;
 const blockSaveTimers = new Map();
 const blockPendingText = new Map();
+const blockInFlightText = new Map();
 
 // ---------- DOM helpers ----------
 const $ = (id) => document.getElementById(id);
@@ -495,22 +496,43 @@ function handleWSMessage(raw) {
       break;
     case "page.block.updated": {
       const incoming = payload.block;
-      state.currentPage.blocks[incoming.id] = incoming;
-      const timer = blockSaveTimers.get(incoming.id);
-      if (timer != null) {
-        clearTimeout(timer);
-        blockSaveTimers.delete(incoming.id);
+      const pending = blockPendingText.get(incoming.id);
+      const inFlight = blockInFlightText.get(incoming.id);
+      const local = state.currentPage.blocks[incoming.id];
+      const hasNewerLocalText =
+        (pending != null && pending !== incoming.text) ||
+        (inFlight != null && inFlight !== incoming.text);
+
+      if (hasNewerLocalText) {
+        state.currentPage.blocks[incoming.id] = {
+          ...incoming,
+          text: pending ?? inFlight ?? local?.text ?? incoming.text,
+        };
+      } else {
+        state.currentPage.blocks[incoming.id] = incoming;
       }
-      blockPendingText.delete(incoming.id);
+
+      if (pending != null && pending === incoming.text) {
+        const timer = blockSaveTimers.get(incoming.id);
+        if (timer != null) {
+          clearTimeout(timer);
+          blockSaveTimers.delete(incoming.id);
+        }
+        blockPendingText.delete(incoming.id);
+      }
+      if (inFlight != null && inFlight === incoming.text) {
+        blockInFlightText.delete(incoming.id);
+      }
+
       const blockEl = document.querySelector(
         `.block[data-block-id="${incoming.id}"]`,
       );
       if (blockEl) {
         const body = blockEl.querySelector(".block-body");
-        if (body.textContent !== incoming.text) {
+        if (!hasNewerLocalText && body.textContent !== incoming.text) {
           body.textContent = incoming.text;
         }
-        applyBlockTypeAttrs(blockEl, incoming);
+        applyBlockTypeAttrs(blockEl, state.currentPage.blocks[incoming.id]);
       }
       renderRemoteCursors();
       break;
@@ -577,7 +599,14 @@ async function flushBlockSave(blockId, textOverride) {
   if (!state.currentPage?.blocks[blockId]) return;
   if (pending === state.currentPage.blocks[blockId].text) return;
 
-  await updateBlock(blockId, { text: pending });
+  blockInFlightText.set(blockId, pending);
+  try {
+    await updateBlock(blockId, { text: pending });
+  } finally {
+    if (blockInFlightText.get(blockId) === pending) {
+      blockInFlightText.delete(blockId);
+    }
+  }
 }
 
 function scheduleBlockSave(blockId, text) {

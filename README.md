@@ -6,6 +6,8 @@ Orbit is a Cloudflare Workers framework where Durable Objects are actors, HTTP c
 
 Try the live Notion-style example app: [Orbit Notion Demo](https://orbit-notion.doronindm.workers.dev/).
 
+![Notion-style example app](notion-example.png)
+
 ## Start Here
 
 - Build apps with `@orbit/app`.

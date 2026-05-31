@@ -15,6 +15,9 @@ export interface MessageResult {
   error?: string;
 }
 
+export type ActorMessageMap = Record<string, string>;
+export type ActorMessageType<T extends ActorMessageMap> = T[keyof T];
+
 export interface ActorContext {
   actorId: string;
   actorName: string;
@@ -34,10 +37,10 @@ export interface HandlerMeta {
 }
 
 // Metadata keys
-export const ORBIT_ACTOR_META = '__orbit_actor__';
-export const ORBIT_HANDLERS_META = '__orbit_handlers__';
-export const ORBIT_ALARM_META = '__orbit_alarm__';
-export const ORBIT_WS_EVENTS_META = '__orbit_ws_events__';
+export const ORBIT_ACTOR_META = "__orbit_actor__";
+export const ORBIT_HANDLERS_META = "__orbit_handlers__";
+export const ORBIT_ALARM_META = "__orbit_alarm__";
+export const ORBIT_WS_EVENTS_META = "__orbit_ws_events__";
 
 export interface ActorMetadata {
   name: string;

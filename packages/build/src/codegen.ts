@@ -14,7 +14,7 @@ export interface ActorMeta {
   handlers: string[];
   hasAlarm: boolean;
   hasWebSocket: boolean;
-  persistence: 'auto' | 'manual';
+  persistence: "auto" | "manual";
 }
 
 export interface ControllerMeta {
@@ -46,24 +46,32 @@ export interface AppManifest {
 }
 
 /**
+ * Generates a static worker export snippet for DO classes attached to `worker`.
+ */
+export function generateStaticWorkerExports(actorNames: string[]): string {
+  if (actorNames.length === 0) return "";
+  return `export const { ${actorNames.join(", ")} } = worker;`;
+}
+
+/**
  * Generates wrangler.toml Durable Object bindings from actor metadata.
  */
 export function generateWranglerBindings(actors: ActorMeta[]): string {
-  if (actors.length === 0) return '';
+  if (actors.length === 0) return "";
 
-  const bindings = actors.map(a => {
+  const bindings = actors.map((a) => {
     return `{ name = "${a.name}", class_name = "${a.className}" }`;
   });
 
   return `
 [durable_objects]
 bindings = [
-  ${bindings.join(',\n  ')}
+  ${bindings.join(",\n  ")}
 ]
 
 [[migrations]]
 tag = "v1"
-new_classes = [${actors.map(a => `"${a.className}"`).join(', ')}]
+new_classes = [${actors.map((a) => `"${a.className}"`).join(", ")}]
 `;
 }
 
@@ -135,8 +143,9 @@ export class ${actor.className}_DO {
  * Generates the worker entry point that exports all DO classes.
  */
 export function generateWorkerEntry(manifest: AppManifest): string {
-  const doExports = manifest.actors.map(a =>
-    `export { ${a.className}_DO as ${a.className} } from './__orbit_do_${a.className}__.js';`
+  const doExports = manifest.actors.map(
+    (a) =>
+      `export { ${a.className}_DO as ${a.className} } from './__orbit_do_${a.className}__.js';`,
   );
 
   return `
@@ -144,6 +153,6 @@ import { app } from './main.js';
 
 export default app.handler;
 
-${doExports.join('\n')}
+${doExports.join("\n")}
 `;
 }

@@ -7,6 +7,7 @@ Actor abstraction over Cloudflare Durable Objects. Each `@Actor` class becomes a
 - **`OrbitActor<S>`** — base class. Holds typed state, exposes `updateState`, `broadcast`, `setAlarm`, `persist`, `storage`.
 - **`@Actor(name, options?)`** — marks a class. `name` is the DO binding name. Options: `{ autoPersist: boolean }` (default true).
 - **`@Handle(type, opts?)`** — registers a message handler. Optional Zod schema validation.
+- **`defineActorMessages({...})`** — typed helper for stable actor message-name maps.
 - **`@OnAlarm()`** — registers the alarm handler.
 - **`ActorRegistry`** + **`ActorRef<T>`** — resolve and call actors by name + ID.
 - **`composeDurableObject(ActorClass, options?)`** — turn an actor class into a DO class, optionally bridging channels.
@@ -14,40 +15,60 @@ Actor abstraction over Cloudflare Durable Objects. Each `@Actor` class becomes a
 ## Defining an actor
 
 ```ts
-import { Actor, Handle, OnAlarm, OrbitActor } from '@orbit/actors';
+import {
+  Actor,
+  Handle,
+  OnAlarm,
+  OrbitActor,
+  defineActorMessages,
+} from "@orbit/actors";
 
-interface RoomState { messages: string[] }
+interface RoomState {
+  messages: string[];
+}
 
-@Actor('Room')
+const ROOM_MESSAGES = defineActorMessages({
+  SEND: "room.send",
+});
+
+@Actor("Room")
 export class RoomActor extends OrbitActor<RoomState> {
-  initialState(): RoomState { return { messages: [] }; }
+  initialState(): RoomState {
+    return { messages: [] };
+  }
 
-  @Handle('send')
+  @Handle(ROOM_MESSAGES.SEND)
   async onSend(p: { text: string }) {
-    this.updateState(s => { s.messages.push(p.text); });
-    this.broadcast('new_message', { text: p.text });
+    this.updateState((s) => {
+      s.messages.push(p.text);
+    });
+    this.broadcast("new_message", { text: p.text });
   }
 
   @OnAlarm()
   async cleanup() {
-    this.updateState(s => { s.messages = s.messages.slice(-100); });
+    this.updateState((s) => {
+      s.messages = s.messages.slice(-100);
+    });
   }
 }
 ```
+
+Prefer message maps over inline string literals in `@Handle(...)` so names stay centralized and refactor-friendly.
 
 State auto-persists after every successful handler. To opt out, use `@Actor('Room', { autoPersist: false })` and call `await this.persist()` manually.
 
 ## Calling an actor
 
 ```ts
-import { ActorRegistry, ACTOR_REGISTRY_TOKEN } from '@orbit/actors';
+import { ActorRegistry, ACTOR_REGISTRY_TOKEN } from "@orbit/actors";
 
 @Injectable()
 class RoomService {
   constructor(@Inject(ACTOR_REGISTRY_TOKEN) private actors: ActorRegistry) {}
 
   async post(roomId: string, text: string) {
-    return this.actors.ref(RoomActor, roomId).call('send', { text });
+    return this.actors.ref(RoomActor, roomId).call("send", { text });
   }
 
   async snapshot(roomId: string) {
@@ -81,11 +102,11 @@ export const Room = composeDurableObject(RoomActor);
 ## Testing
 
 ```ts
-import { createTestActor } from '@orbit/testing';
+import { createTestActor } from "@orbit/testing";
 
 const handle = await createTestActor(RoomActor);
-await handle.call('send', { text: 'hi' });
-expect(handle.state.messages).toEqual(['hi']);
+await handle.call("send", { text: "hi" });
+expect(handle.state.messages).toEqual(["hi"]);
 await handle.triggerAlarm();
 ```
 

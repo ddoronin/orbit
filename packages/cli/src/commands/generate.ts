@@ -2,8 +2,8 @@
  * `orbit generate <type> <name>` — Code generation.
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 const GENERATORS: Record<string, (name: string, args: string[]) => void> = {
   actor: generateActor,
@@ -17,20 +17,22 @@ export async function generate(args: string[]): Promise<void> {
   const name = args[1];
 
   if (!type || !name) {
-    console.error('Usage: orbit generate <actor|controller|channel|service> <Name>');
-    console.error('');
-    console.error('Examples:');
-    console.error('  orbit generate actor ChatRoom');
-    console.error('  orbit generate controller Users');
-    console.error('  orbit generate channel RoomChannel');
-    console.error('  orbit generate service Auth');
+    console.error(
+      "Usage: orbit generate <actor|controller|channel|service> <Name>",
+    );
+    console.error("");
+    console.error("Examples:");
+    console.error("  orbit generate actor ChatRoom");
+    console.error("  orbit generate controller Users");
+    console.error("  orbit generate channel RoomChannel");
+    console.error("  orbit generate service Auth");
     process.exit(1);
   }
 
   const generator = GENERATORS[type];
   if (!generator) {
     console.error(`Unknown generator: ${type}`);
-    console.error(`Available: ${Object.keys(GENERATORS).join(', ')}`);
+    console.error(`Available: ${Object.keys(GENERATORS).join(", ")}`);
     process.exit(1);
   }
 
@@ -38,7 +40,7 @@ export async function generate(args: string[]): Promise<void> {
 }
 
 function toKebab(name: string): string {
-  return name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+  return name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
 function ensureDir(dir: string): void {
@@ -49,10 +51,16 @@ function ensureDir(dir: string): void {
 
 function generateActor(name: string, _args: string[]): void {
   const kebab = toKebab(name);
-  const dir = join(process.cwd(), 'src');
+  const dir = join(process.cwd(), "src");
   ensureDir(dir);
 
-  writeFileSync(join(dir, `${kebab}.actor.ts`), `import { Actor, Handle, OrbitActor } from '@orbit/app';
+  writeFileSync(
+    join(dir, `${kebab}.actor.ts`),
+    `import { Actor, Handle, OrbitActor, defineActorMessages } from '@orbit/app';
+
+const ${name.toUpperCase()}_MESSAGES = defineActorMessages({
+  EXAMPLE: '${kebab}.example',
+});
 
 interface ${name}State {
   // Define your actor state here
@@ -64,26 +72,34 @@ export class ${name}Actor extends OrbitActor<${name}State> {
     return {};
   }
 
-  @Handle('example')
+  @Handle(${name.toUpperCase()}_MESSAGES.EXAMPLE)
   async onExample(msg: { data: string }) {
     return { received: msg.data };
   }
 }
-`);
+`,
+  );
 
   console.log(`Generated actor: src/${kebab}.actor.ts`);
-  console.log(`Don't forget to add ${name}Actor to @OrbitApp({ actors: [...] }).`);
+  console.log(
+    `Don't forget to add ${name}Actor to @OrbitApp({ actors: [...] }).`,
+  );
 }
 
 function generateController(name: string, _args: string[]): void {
   const kebab = toKebab(name);
-  const dir = join(process.cwd(), 'src');
+  const dir = join(process.cwd(), "src");
   ensureDir(dir);
 
-  writeFileSync(join(dir, `${kebab}.controller.ts`), `import { Resource, Get, Post, Param, Body } from '@orbit/app';
+  writeFileSync(
+    join(dir, `${kebab}.controller.ts`),
+    `import { Resource, Get, Post, Param, Body } from '@orbit/app';
 
 @Resource('/${kebab}')
 export class ${name}Controller {
+  // Example explicit DI pattern:
+  // constructor(@Inject(${name}Service) private readonly service: ${name}Service) {}
+
   @Get('/')
   async list() {
     return { items: [] };
@@ -99,18 +115,23 @@ export class ${name}Controller {
     return body;
   }
 }
-`);
+`,
+  );
 
   console.log(`Generated controller: src/${kebab}.controller.ts`);
-  console.log(`Don't forget to add ${name}Controller to @OrbitApp({ controllers: [...] }).`);
+  console.log(
+    `Don't forget to add ${name}Controller to @OrbitApp({ controllers: [...] }).`,
+  );
 }
 
 function generateChannel(name: string, _args: string[]): void {
   const kebab = toKebab(name);
-  const dir = join(process.cwd(), 'src');
+  const dir = join(process.cwd(), "src");
   ensureDir(dir);
 
-  writeFileSync(join(dir, `${kebab}.channel.ts`), `import { Channel, On, OrbitChannel, type Socket } from '@orbit/app';
+  writeFileSync(
+    join(dir, `${kebab}.channel.ts`),
+    `import { Channel, On, OrbitChannel, type Socket } from '@orbit/app';
 
 @Channel('${kebab}:*')
 export class ${name}Channel extends OrbitChannel {
@@ -123,24 +144,33 @@ export class ${name}Channel extends OrbitChannel {
     socket.broadcastFrom('message', payload);
   }
 }
-`);
+`,
+  );
 
   console.log(`Generated channel: src/${kebab}.channel.ts`);
 }
 
 function generateService(name: string, _args: string[]): void {
   const kebab = toKebab(name);
-  const dir = join(process.cwd(), 'src');
+  const dir = join(process.cwd(), "src");
   ensureDir(dir);
 
-  writeFileSync(join(dir, `${kebab}.service.ts`), `import { Injectable } from '@orbit/app';
+  writeFileSync(
+    join(dir, `${kebab}.service.ts`),
+    `import { Injectable } from '@orbit/app';
 
 @Injectable()
 export class ${name}Service {
+  // Example explicit DI pattern:
+  // constructor(@Inject(DB) private readonly db: D1Database) {}
+
   // Add your service methods here
 }
-`);
+`,
+  );
 
   console.log(`Generated service: src/${kebab}.service.ts`);
-  console.log(`Don't forget to add ${name}Service to @OrbitApp({ providers: [...] }).`);
+  console.log(
+    `Don't forget to add ${name}Service to @OrbitApp({ providers: [...] }).`,
+  );
 }

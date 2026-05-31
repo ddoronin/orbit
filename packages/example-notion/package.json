@@ -10,13 +10,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@orbit/app": "*"
+    "@orbit/app": "*",
+    "@orbit/queues": "*"
   },
   "devDependencies": {
     "@orbit/testing": "*",

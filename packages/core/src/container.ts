@@ -7,9 +7,9 @@
  * - TRANSIENT: new instance every resolve() call
  */
 
-import type { Token } from './tokens.js';
+import type { Token } from "./tokens.js";
 
-export type Scope = 'SINGLETON' | 'REQUEST' | 'TRANSIENT';
+export type Scope = "SINGLETON" | "REQUEST" | "TRANSIENT";
 
 export interface ProviderDefinition<T = any> {
   token: Token<T>;
@@ -26,7 +26,29 @@ export interface ValueProvider<T = any> {
 export type Provider<T = any> = ProviderDefinition<T> | ValueProvider<T>;
 
 function isValueProvider<T>(p: Provider<T>): p is ValueProvider<T> {
-  return 'value' in p;
+  return "value" in p;
+}
+
+function tokenToString(token: Token): string {
+  if (typeof token === "function" && token.name) {
+    return token.name;
+  }
+  if (typeof token === "symbol") {
+    return token.toString();
+  }
+  return String(token);
+}
+
+function withDependencyContext(
+  ownerToken: Token,
+  depToken: Token,
+  depIndex: number,
+  err: unknown,
+): Error {
+  const baseMessage = err instanceof Error ? err.message : String(err);
+  return new Error(
+    `Failed to resolve dependency at index ${depIndex} for provider ${tokenToString(ownerToken)} (token: ${tokenToString(depToken)}). ${baseMessage}`,
+  );
 }
 
 interface Registration {
@@ -47,14 +69,14 @@ export class Container {
       this.registrations.set(provider.token, {
         factory: () => provider.value,
         inject: [],
-        scope: 'SINGLETON',
+        scope: "SINGLETON",
       });
       this.singletons.set(provider.token, provider.value);
     } else {
       this.registrations.set(provider.token, {
         factory: provider.factory,
         inject: provider.inject ?? [],
-        scope: provider.scope ?? 'SINGLETON',
+        scope: provider.scope ?? "SINGLETON",
       });
     }
     return this;
@@ -68,7 +90,7 @@ export class Container {
     token: Token<T>,
     factory: (...deps: any[]) => T,
     inject: Token[] = [],
-    scope: Scope = 'SINGLETON',
+    scope: Scope = "SINGLETON",
   ): this {
     return this.register({ token, factory, inject, scope });
   }
@@ -90,27 +112,36 @@ export class Container {
     }
 
     // Find registration (local first, then parent)
-    const reg = this.registrations.get(token) ?? this.parent?.registrations.get(token);
+    const reg =
+      this.registrations.get(token) ?? this.parent?.registrations.get(token);
     if (!reg) {
-      const tokenStr = typeof token === 'symbol' ? token.toString() : String(token);
+      const tokenStr = tokenToString(token);
       throw new Error(`No provider registered for token: ${tokenStr}`);
     }
 
     // Circular dependency detection
     if (this.resolving.has(token)) {
-      const tokenStr = typeof token === 'symbol' ? token.toString() : String(token);
+      const tokenStr = tokenToString(token);
       throw new Error(`Circular dependency detected for token: ${tokenStr}`);
     }
 
     this.resolving.add(token);
     try {
       // Resolve dependencies
-      const deps = await Promise.all(reg.inject.map(dep => this.resolve(dep)));
+      const deps: any[] = [];
+      for (let i = 0; i < reg.inject.length; i++) {
+        const dep = reg.inject[i];
+        try {
+          deps.push(await this.resolve(dep));
+        } catch (err) {
+          throw withDependencyContext(token, dep, i, err);
+        }
+      }
       const instance = await reg.factory(...deps);
 
       // Cache based on scope
       switch (reg.scope) {
-        case 'SINGLETON':
+        case "SINGLETON":
           // Store on the container that owns the registration
           if (this.registrations.has(token)) {
             this.singletons.set(token, instance);
@@ -118,10 +149,10 @@ export class Container {
             this.parent.singletons.set(token, instance);
           }
           break;
-        case 'REQUEST':
+        case "REQUEST":
           this.scopedInstances.set(token, instance);
           break;
-        case 'TRANSIENT':
+        case "TRANSIENT":
           // no caching
           break;
       }
@@ -144,35 +175,46 @@ export class Container {
       return this.parent.singletons.get(token) as T;
     }
 
-    const reg = this.registrations.get(token) ?? this.parent?.registrations.get(token);
+    const reg =
+      this.registrations.get(token) ?? this.parent?.registrations.get(token);
     if (!reg) {
-      const tokenStr = typeof token === 'symbol' ? token.toString() : String(token);
+      const tokenStr = tokenToString(token);
       throw new Error(`No provider registered for token: ${tokenStr}`);
     }
 
     if (this.resolving.has(token)) {
-      const tokenStr = typeof token === 'symbol' ? token.toString() : String(token);
+      const tokenStr = tokenToString(token);
       throw new Error(`Circular dependency detected for token: ${tokenStr}`);
     }
 
     this.resolving.add(token);
     try {
-      const deps = reg.inject.map(dep => this.resolveSync(dep));
+      const deps: any[] = [];
+      for (let i = 0; i < reg.inject.length; i++) {
+        const dep = reg.inject[i];
+        try {
+          deps.push(this.resolveSync(dep));
+        } catch (err) {
+          throw withDependencyContext(token, dep, i, err);
+        }
+      }
       const instance = reg.factory(...deps);
 
       if (instance instanceof Promise) {
-        throw new Error('Cannot resolveSync an async provider. Use resolve() instead.');
+        throw new Error(
+          "Cannot resolveSync an async provider. Use resolve() instead.",
+        );
       }
 
       switch (reg.scope) {
-        case 'SINGLETON':
+        case "SINGLETON":
           if (this.registrations.has(token)) {
             this.singletons.set(token, instance);
           } else if (this.parent) {
             this.parent.singletons.set(token, instance);
           }
           break;
-        case 'REQUEST':
+        case "REQUEST":
           this.scopedInstances.set(token, instance);
           break;
       }

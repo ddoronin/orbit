@@ -18,7 +18,7 @@ import {
   type HandlerMeta,
   type MessageEnvelope,
   type MessageResult,
-} from './types.js';
+} from "./types.js";
 
 export abstract class OrbitActor<S = any> {
   protected state!: S;
@@ -32,7 +32,8 @@ export abstract class OrbitActor<S = any> {
   /** @internal */
   private __sockets__: Set<WebSocket> = new Set();
   /** @internal */
-  private __socketData__: WeakMap<WebSocket, Record<string, unknown>> = new WeakMap();
+  private __socketData__: WeakMap<WebSocket, Record<string, unknown>> =
+    new WeakMap();
 
   abstract initialState(): S;
 
@@ -62,7 +63,10 @@ export abstract class OrbitActor<S = any> {
   // --- Alarm ---
 
   protected async setAlarm(scheduledTime: number | Date): Promise<void> {
-    const time = typeof scheduledTime === 'number' ? new Date(scheduledTime) : scheduledTime;
+    const time =
+      typeof scheduledTime === "number"
+        ? new Date(scheduledTime)
+        : scheduledTime;
     await this.__ctx__.storage.setAlarm(time);
   }
 
@@ -88,7 +92,11 @@ export abstract class OrbitActor<S = any> {
     }
   }
 
-  protected broadcastExcept(excludeWs: WebSocket, event: string, payload: unknown): void {
+  protected broadcastExcept(
+    excludeWs: WebSocket,
+    event: string,
+    payload: unknown,
+  ): void {
     const message = JSON.stringify({
       event,
       topic: this.__getActorMeta__().name,
@@ -120,7 +128,7 @@ export abstract class OrbitActor<S = any> {
   // --- Persistence ---
 
   protected async persist(): Promise<void> {
-    await this.__ctx__.storage.put('__orbit_state__', this.state);
+    await this.__ctx__.storage.put("__orbit_state__", this.state);
     this.__dirty__ = false;
   }
 
@@ -155,17 +163,31 @@ export abstract class OrbitActor<S = any> {
   /** @internal */
   __getHandlerMap__(): Map<string, HandlerMeta> {
     if (this.__handlerMap__) return this.__handlerMap__;
-    const handlers: HandlerMeta[] = (this.constructor as any)[ORBIT_HANDLERS_META] ?? [];
-    this.__handlerMap__ = new Map(handlers.map(h => [h.type, h]));
+    const handlers: HandlerMeta[] =
+      (this.constructor as any)[ORBIT_HANDLERS_META] ?? [];
+    this.__handlerMap__ = new Map(handlers.map((h) => [h.type, h]));
     return this.__handlerMap__;
   }
 
   /** @internal */
-  async __dispatch__(envelope: MessageEnvelope, doState: DurableObjectState): Promise<Response> {
+  async __dispatch__(
+    envelope: MessageEnvelope,
+    doState: DurableObjectState,
+  ): Promise<Response> {
     const handler = this.__getHandlerMap__().get(envelope.type);
     if (!handler) {
+      const knownMessageTypes = [...this.__getHandlerMap__().keys()].sort();
       return Response.json(
-        { ok: false, error: `Unknown message type: ${envelope.type}` },
+        {
+          ok: false,
+          error: `Unknown message type: ${envelope.type}`,
+          details: {
+            actorName: this.__ctx__?.actorName ?? this.__getActorMeta__().name,
+            actorId: this.__ctx__?.actorId,
+            receivedType: envelope.type,
+            knownMessageTypes,
+          },
+        },
         { status: 400 },
       );
     }
@@ -175,7 +197,11 @@ export abstract class OrbitActor<S = any> {
       const result = handler.schema.safeParse(envelope.payload);
       if (!result.success) {
         return Response.json(
-          { ok: false, error: 'Validation failed', details: result.error.issues },
+          {
+            ok: false,
+            error: "Validation failed",
+            details: result.error.issues,
+          },
           { status: 400 },
         );
       }
@@ -198,7 +224,7 @@ export abstract class OrbitActor<S = any> {
       this.state = prevState;
       this.__dirty__ = false;
       return Response.json(
-        { ok: false, error: err.message ?? 'Handler error' },
+        { ok: false, error: err.message ?? "Handler error" },
         { status: 500 },
       );
     }
@@ -206,8 +232,10 @@ export abstract class OrbitActor<S = any> {
 
   /** @internal */
   async __onAlarm__(): Promise<void> {
-    const alarmMethod: string | undefined = (this.constructor as any)[ORBIT_ALARM_META];
-    if (alarmMethod && typeof (this as any)[alarmMethod] === 'function') {
+    const alarmMethod: string | undefined = (this.constructor as any)[
+      ORBIT_ALARM_META
+    ];
+    if (alarmMethod && typeof (this as any)[alarmMethod] === "function") {
       await (this as any)[alarmMethod].call(this);
       if (this.__dirty__ && this.__getActorMeta__().options.autoPersist) {
         await this.persist();
@@ -216,7 +244,10 @@ export abstract class OrbitActor<S = any> {
   }
 
   /** @internal */
-  __handleWebSocketUpgrade__(request: Request, doState: DurableObjectState): Response {
+  __handleWebSocketUpgrade__(
+    request: Request,
+    doState: DurableObjectState,
+  ): Response {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     doState.acceptWebSocket(server);
@@ -225,9 +256,12 @@ export abstract class OrbitActor<S = any> {
   }
 
   /** @internal */
-  async __webSocketMessage__(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+  async __webSocketMessage__(
+    ws: WebSocket,
+    message: string | ArrayBuffer,
+  ): Promise<void> {
     // Default: parse as JSON envelope and dispatch
-    if (typeof message !== 'string') return;
+    if (typeof message !== "string") return;
 
     try {
       const parsed = JSON.parse(message);
@@ -237,7 +271,11 @@ export abstract class OrbitActor<S = any> {
         const type = parsed.type ?? parsed.event;
         const handler = this.__getHandlerMap__().get(type);
         if (handler) {
-          await (this as any)[handler.method].call(this, parsed.payload, this.__ctx__);
+          await (this as any)[handler.method].call(
+            this,
+            parsed.payload,
+            this.__ctx__,
+          );
           if (this.__dirty__ && this.__getActorMeta__().options.autoPersist) {
             await this.persist();
           }
@@ -249,7 +287,12 @@ export abstract class OrbitActor<S = any> {
   }
 
   /** @internal */
-  async __webSocketClose__(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
+  async __webSocketClose__(
+    ws: WebSocket,
+    code: number,
+    reason: string,
+    wasClean: boolean,
+  ): Promise<void> {
     this.__sockets__.delete(ws);
   }
 

@@ -32,3 +32,18 @@ new_classes = ["Workspace", "Page"]
 [[kv_namespaces]]
 binding = "ORBIT_NOTION_SESSIONS"
 id = "8319b6c8f62f474f8897687ce0f21eef"
+
+# D1 table for the tutorial's end-to-end login audit example.
+# Replace database_id with a real id before deploy, or create a local db in dev.
+[[d1_databases]]
+binding = "ORBIT_NOTION_DB"
+database_name = "orbit-notion-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# Queue used by the tutorial's end-to-end producer/consumer example.
+[[queues.producers]]
+binding = "ORBIT_NOTION_AUDIT_QUEUE"
+queue = "orbit-notion-audit-logins"
+
+[[queues.consumers]]
+queue = "orbit-notion-audit-logins"

@@ -2,6 +2,9 @@
   "name": "@orbit/cli",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=23 <24"
+  },
   "bin": {
     "orbit": "dist/bin.js"
   },
@@ -15,7 +18,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

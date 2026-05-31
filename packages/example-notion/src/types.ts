@@ -70,3 +70,10 @@ export interface Session {
   userId: string;
   displayName: string;
 }
+
+export interface LoginAuditEvent {
+  id: string;
+  userId: string;
+  displayName: string;
+  createdAt: number;
+}

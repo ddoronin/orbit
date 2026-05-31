@@ -1,5 +1,6 @@
 export {
   generateWranglerBindings,
+  generateStaticWorkerExports,
   generateDurableObjectClass,
   generateWorkerEntry,
   type ActorMeta,
@@ -7,10 +8,10 @@ export {
   type RouteMeta,
   type ChannelMeta,
   type AppManifest,
-} from './codegen.js';
+} from "./codegen.js";
 
 export {
   orbitPlugin,
   createBuildConfig,
   type OrbitPluginOptions,
-} from './plugin.js';
+} from "./plugin.js";

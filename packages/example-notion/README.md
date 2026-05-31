@@ -57,7 +57,7 @@ The Notion example uses two actor types:
 
 You don't have to think about Durable Object lifecycle, hibernation, storage keys, or fetch handlers. Orbit wraps all of that. You write a class with state and methods; Orbit makes it a DO.
 
-Storage primitives (KV for sessions, D1 for relational data, R2 for blobs) are still injectable when you need them — they just aren't always the right tool. The Notion clone uses KV for sessions and Durable Objects for everything else. Page data lives inside the page's DO, not in a database.
+Storage primitives (KV for sessions, D1 for relational data, R2 for blobs) are still injectable when you need them — they just aren't always the right tool. This Notion clone keeps collaborative page/workspace state in Durable Objects, uses KV for auth sessions, and includes D1 + Queues login-audit routes as end-to-end examples.
 
 ---
 
@@ -65,13 +65,18 @@ Storage primitives (KV for sessions, D1 for relational data, R2 for blobs) are s
 
 ```
 src/
-├── index.ts                  # @OrbitApp + createWorker
+├── index.ts                  # @OrbitApp + createWorker + queue()
 ├── types.ts                  # Block, PageState, WorkspaceState
 ├── auth.controller.ts        # POST /auth/login (passwordless dev login)
+├── d1.controller.ts          # /d1/login-events (D1 end-to-end example)
+├── queue.controller.ts       # /queue/login-events (Queues producer example)
+├── queue.consumer.ts         # Queue consumer persists events into D1
 ├── workspace.actor.ts        # Workspace DO
 ├── workspace.controller.ts   # /workspaces/* REST endpoints
 ├── page.actor.ts             # Page DO with broadcast + presence
 └── page.controller.ts        # /pages/* REST endpoints
+migrations/
+└── 0001_login_audit.sql      # notion_login_events D1 table
 public/
 ├── index.html                # SPA shell
 ├── styles.css                # Notion-ish styling
@@ -655,6 +660,53 @@ Other clients on the same page receive:
 ```
 
 That's the framework's broadcast in action.
+
+### D1 end-to-end example route
+
+The example app also exposes a minimal D1-backed flow:
+
+- `POST /d1/login-events` inserts a login audit row
+- `GET /d1/login-events` returns the latest rows
+
+Migration file:
+
+`migrations/0001_login_audit.sql`
+
+Apply it in local dev before calling the endpoints:
+
+```sh
+cd packages/example-notion
+npx wrangler d1 migrations apply ORBIT_NOTION_DB --local
+```
+
+Then smoke-test the route:
+
+```sh
+curl -s -X POST http://localhost:8787/d1/login-events \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Alice","userId":"u-alice"}'
+
+curl -s http://localhost:8787/d1/login-events
+```
+
+### Queues end-to-end example route
+
+The same app also includes a minimal queue producer/consumer flow:
+
+- `POST /queue/login-events` enqueues a login audit event to `ORBIT_NOTION_AUDIT_QUEUE`
+- Worker `queue()` dispatches to `LoginAuditQueueConsumer`
+- The consumer inserts events into the same `notion_login_events` D1 table
+
+Local smoke test:
+
+```sh
+curl -s -X POST http://localhost:8787/queue/login-events \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Bob","userId":"u-bob"}'
+
+# after queue consumption, this includes Bob's event
+curl -s http://localhost:8787/d1/login-events
+```
 
 ### Deploying
 

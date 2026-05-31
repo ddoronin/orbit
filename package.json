@@ -1,6 +1,9 @@
 {
   "name": "orbit-monorepo",
   "private": true,
+  "engines": {
+    "node": ">=23 <24"
+  },
   "workspaces": [
     "packages/*"
   ],

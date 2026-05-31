@@ -37,7 +37,7 @@ id = "8319b6c8f62f474f8897687ce0f21eef"
 [[d1_databases]]
 binding = "ORBIT_NOTION_DB"
 database_name = "orbit-notion-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "c6ccd32d-c6e9-4212-85b7-ec2ee1e6bbb0"
 
 # Queue used by the tutorial's end-to-end producer/consumer example.
 [[queues.producers]]

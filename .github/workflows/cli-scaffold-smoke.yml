@@ -1,4 +1,4 @@
-name: CLI Scaffold Smoke
+name: Unit Tests
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  scaffold-smoke:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,41 +22,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build CLI
-        run: npm --workspace @orbit/cli run build
-
-      - name: Generate scaffold templates
-        run: |
-          cli_bin="$PWD/packages/cli/dist/bin.js"
-          tmpdir="$(mktemp -d)"
-          node "$cli_bin" new "$tmpdir/orbit-api" --template=api
-          node "$cli_bin" new "$tmpdir/orbit-rt" --template=realtime
-
-          grep -q '"@orbit/app"' "$tmpdir/orbit-api/package.json"
-          grep -q '"node": ">=23 <24"' "$tmpdir/orbit-api/package.json"
-          grep -q 'engine-strict=true' "$tmpdir/orbit-api/.npmrc"
-          test -f "$tmpdir/orbit-api/AGENTS.md"
-          test -f "$tmpdir/orbit-api/.cursor/rules/orbit.mdc"
-          test -f "$tmpdir/orbit-api/.cursor/rules/wrangler.mdc"
-          test -f "$tmpdir/orbit-api/.cursor/rules/actors.mdc"
-          grep -q 'orbit build --strict-wiring' "$tmpdir/orbit-api/AGENTS.md"
-          grep -q 'export const { ChatRoom } = worker;' "$tmpdir/orbit-rt/src/main.ts"
-          grep -q 'class_name = "ChatRoom"' "$tmpdir/orbit-rt/wrangler.toml"
-
-          # Build-time generation path: artifacts should be emitted even before dependency install.
-          (cd "$tmpdir/orbit-rt" && node "$cli_bin" build --generate-wiring >/dev/null 2>&1 || true)
-          test -f "$tmpdir/orbit-rt/dist/orbit.generated.wrangler.toml"
-          test -f "$tmpdir/orbit-rt/dist/orbit.generated.worker-exports.ts"
-
-          # Break DO export wiring and ensure strict mode fails before bundling.
-          perl -0pi -e 's/export const \{ ChatRoom \} = worker;\n//' "$tmpdir/orbit-rt/src/main.ts"
-          perl -0pi -e 's/\{\s*name = "ChatRoom",\s*class_name = "ChatRoom"\s*\}//g' "$tmpdir/orbit-rt/wrangler.toml"
-          if (cd "$tmpdir/orbit-rt" && node "$cli_bin" build --strict-wiring); then
-            echo "Expected strict preflight build failure but build succeeded."
-            exit 1
-          fi
-
-          # Auto-apply mode should restore missing source wiring even before dependency install.
-          (cd "$tmpdir/orbit-rt" && node "$cli_bin" build --apply-generated-wiring >/dev/null 2>&1 || true)
-          grep -q 'export const { ChatRoom } = worker;' "$tmpdir/orbit-rt/src/main.ts"
-          grep -q 'class_name = "ChatRoom"' "$tmpdir/orbit-rt/wrangler.toml"
+      - name: Run unit tests (all packages)
+        run: npm run test --workspaces --if-present

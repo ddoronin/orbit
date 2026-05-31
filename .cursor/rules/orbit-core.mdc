@@ -1,0 +1,10 @@
+---
+description: Orbit framework coding checklist for contributors.
+alwaysApply: true
+---
+
+- Follow root AGENTS.md conventions before introducing new patterns.
+- Prefer app-facing imports from '@orbit/app' unless extending internals.
+- Keep framework examples aligned with packages/example-notion.
+- Validate actor wiring changes with 'orbit build --strict-wiring'.
+- Keep docs and scaffold output synchronized when changing CLI behavior.

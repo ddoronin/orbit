@@ -1,0 +1,10 @@
+---
+description: Orbit actor file conventions.
+globs:
+  - "**/*.actor.ts"
+---
+
+- Use explicit '@Actor("Name")' identifiers.
+- Define a const message map (for example, 'const ROOM_MESSAGES = defineActorMessages(...)') and reference it from '@Handle(...)'.
+- Align actor names with worker DO exports and wrangler class_name bindings.
+- Use '.js' suffix on relative imports in TS ESM source files.

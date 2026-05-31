@@ -1,6 +1,14 @@
-# Orbit
+# OrbitStack
 
-Orbit is a Cloudflare Workers framework where Durable Objects are actors, HTTP controllers orchestrate them, and `@OrbitApp` is the composition root.
+OrbitStack is a Cloudflare Workers framework where Durable Objects are actors, HTTP controllers orchestrate them, and `@OrbitApp` is the composition root.
+
+## Quick setup
+
+Paste this into any AI coding agent to install OrbitStack agent tooling in one step.
+
+```bash
+Fetch https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/agent-setup/prompt.md
+```
 
 ## Demo
 
@@ -52,6 +60,9 @@ When unsure, copy the closest working pattern from `packages/example-notion` bef
 
 ## AI Agents
 
+- First-run setup prompt: see `agent-setup/prompt.md`.
+- Workspace prompt for prompt-aware agents: `.github/prompts/orbitstack-agent-setup.prompt.md`.
 - Repo guidance: see `AGENTS.md`.
 - Cursor users: repo rules are in `.cursor/rules/`.
 - Installable Orbit skill: copy `.cursor/skills/orbitstack/` into your project or into `~/.cursor/skills/orbitstack/`.
+- OrbitStack does not currently publish an MCP server suite; use docs, prompt files, and local rules instead.

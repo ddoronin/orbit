@@ -5,6 +5,8 @@
 - Prefer `@orbitstack/app` for application code.
 - Copy working patterns from `packages/example-notion`.
 - Treat this file and the root README as source of truth for app wiring.
+- For first-chat bootstrap, use `agent-setup/prompt.md` or `.github/prompts/orbitstack-agent-setup.prompt.md` when your agent supports workspace prompt files.
+- Use Node.js 23.x for installs, builds, tests, and dev servers.
 
 ## Adding an Actor
 

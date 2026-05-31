@@ -1,4 +1,5 @@
 {
+    "chat.promptFilesRecommendations": true,
     "chat.tools.terminal.autoApprove": {
         "/^npm --workspace @orbitstack/example-notion run build$/": {
             "approve": true,

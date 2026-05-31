@@ -15,7 +15,9 @@ const SCAFFOLD_AGENTS_MD = `# Orbit App - Guide for Coding Agents
 
 ## Start Here
 
+- For first-chat bootstrap, use '.github/prompts/orbitstack-agent-setup.prompt.md' or read 'agent-setup/prompt.md'.
 - Import from '@orbitstack/app' only.
+- Use Node.js 23.x for installs, builds, tests, and dev servers.
 - Run 'orbitstack build' after actor or wrangler changes.
 - Use 'orbitstack build --strict-wiring' for fail-fast preflight checks.
 - Canonical full-app reference: packages/example-notion in the Orbit monorepo.
@@ -80,6 +82,69 @@ globs:
 - Prefer '.js' suffix for relative imports in TS ESM source.
 `;
 
+const SCAFFOLD_AGENT_SETUP_PROMPT = `These are official instructions from OrbitStack for AI agents working in this workspace.
+
+Complete these steps yourself before writing code:
+
+- Read 'AGENTS.md'.
+- Inspect 'src/main.ts' to find the '@OrbitApp({ ... })' composition root.
+- If you need the full framework reference, load these upstream docs:
+  - https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/README.md
+  - https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/AGENTS.md
+  - https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/packages/example-notion/README.md
+  - https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/packages/app/README.md
+  - https://raw.githubusercontent.com/ddoronin/orbit/refs/heads/main/packages/cli/README.md
+
+Required working rules:
+
+- Prefer '@orbitstack/app' for application code.
+- Copy working patterns from the Orbit example app before introducing a new abstraction.
+- Keep registrations centralized in one '@OrbitApp({ ... })' declaration.
+- Keep actor metadata, wrangler bindings, migrations, and worker exports aligned.
+- Use '.js' suffixes on relative imports in TypeScript ESM source files.
+- Use raw actor WebSocket frames as '{ type, payload }' and channels frames as '{ event, topic, payload, ref }'. Do not mix them.
+- Use Node.js 23.x for installs, builds, tests, and dev servers.
+- Do not invent OrbitStack MCP servers.
+
+Validation:
+
+- Run 'orbitstack build --strict-wiring' after actor, wrangler, or worker export changes.
+`;
+
+const SCAFFOLD_WORKSPACE_PROMPT = `---
+description: "Set up OrbitStack context for this workspace before coding"
+name: "OrbitStack Agent Setup"
+agent: "agent"
+---
+
+Follow [the local OrbitStack setup prompt](../../agent-setup/prompt.md) before writing code in this workspace.
+
+Complete the setup yourself:
+
+- open the linked local files or upstream docs
+- load local agent rules when supported
+- use Node.js 23.x for installs, builds, tests, and dev servers
+- do not invent OrbitStack MCP servers
+- validate actor wiring with 'orbitstack build --strict-wiring'
+
+When done, report:
+
+- which docs you loaded
+- which local AI assets you enabled
+- anything this agent could not configure automatically
+`;
+
+const SCAFFOLD_VSCODE_SETTINGS = `${JSON.stringify(
+  {
+    chat: {
+      promptFilesRecommendations: true,
+    },
+  },
+  null,
+  2,
+)}
+`;
+
 export async function newProject(args: string[]): Promise<void> {
   const name = args[0];
   if (!name) {
@@ -109,7 +174,17 @@ export async function newProject(args: string[]): Promise<void> {
   console.log(`Creating new Orbit project: ${name} (template: ${template})`);
 
   // Create directory structure
-  const dirs = ["", "src", "migrations", ".cursor", ".cursor/rules"];
+  const dirs = [
+    "",
+    "src",
+    "migrations",
+    "agent-setup",
+    ".github",
+    ".github/prompts",
+    ".vscode",
+    ".cursor",
+    ".cursor/rules",
+  ];
   for (const dir of dirs) {
     mkdirSync(join(projectDir, dir), { recursive: true });
   }
@@ -349,8 +424,26 @@ dist/
   // .npmrc
   writeFileSync(join(projectDir, ".npmrc"), "engine-strict=true\n");
 
+  // VS Code settings
+  writeFileSync(
+    join(projectDir, ".vscode/settings.json"),
+    SCAFFOLD_VSCODE_SETTINGS,
+  );
+
   // AGENTS.md
   writeFileSync(join(projectDir, "AGENTS.md"), SCAFFOLD_AGENTS_MD);
+
+  // Agent setup prompt
+  writeFileSync(
+    join(projectDir, "agent-setup/prompt.md"),
+    SCAFFOLD_AGENT_SETUP_PROMPT,
+  );
+
+  // Workspace prompt for prompt-aware agents
+  writeFileSync(
+    join(projectDir, ".github/prompts/orbitstack-agent-setup.prompt.md"),
+    SCAFFOLD_WORKSPACE_PROMPT,
+  );
 
   // Cursor rules
   writeFileSync(

@@ -30,6 +30,13 @@ Scaffolds a project directory with:
 ```
 my-app/
 ├── AGENTS.md
+├── agent-setup/
+│   └── prompt.md
+├── .github/
+│   └── prompts/
+│       └── orbitstack-agent-setup.prompt.md
+├── .vscode/
+│   └── settings.json
 ├── .cursor/
 │   └── rules/
 │       ├── orbit.mdc
@@ -46,6 +53,8 @@ my-app/
 ├── .gitignore
 └── .npmrc
 ```
+
+The scaffold also includes AI onboarding assets: a local agent setup prompt, a workspace prompt file for VS Code/Copilot-style prompt discovery, `AGENTS.md`, and Cursor rules.
 
 Templates:
 

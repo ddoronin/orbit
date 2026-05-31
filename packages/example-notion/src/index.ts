@@ -58,4 +58,19 @@ const worker = Object.assign(httpWorker, {
 export default worker;
 export const { Workspace, Page } = worker;
 
+export * from "./ordering.js";
+export type {
+  Block as CanonicalBlock,
+  BlockType as CanonicalBlockType,
+  BlockMutationResult,
+  CreateBlockInput,
+  DeleteBlockInput,
+  DuplicateBlockInput,
+  Mention,
+  MoveBlockInput,
+  RichText,
+  RichTextAnnotations,
+  RichTextSegment,
+  UpdateBlockInput,
+} from "./block-model.js";
 export type * from "./types.js";

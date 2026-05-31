@@ -111,6 +111,8 @@ export class PageController {
       type?: BlockType;
       checked?: boolean;
       language?: string;
+      color?: string | null;
+      backgroundColor?: string | null;
     },
     @Auth() me: Session,
   ): Promise<Block> {
@@ -119,6 +121,56 @@ export class PageController {
     return this.actors
       .ref(PageActor, id)
       .call("page.block.update", { blockId, ...body });
+  }
+
+  @Post("/:id/blocks/:blockId/move")
+  async moveBlock(
+    @Param("id") id: string,
+    @Param("blockId") blockId: string,
+    @Body()
+    body: {
+      parentBlockId?: string | null;
+      afterBlockId?: string | null;
+    },
+    @Auth() me: Session,
+  ): Promise<Block> {
+    const page = await this.show(id, me);
+    if (page.workspaceId) await this.assertEditor(page.workspaceId, me.userId);
+    return this.actors.ref(PageActor, id).call("page.block.move", {
+      blockId,
+      parentBlockId: body.parentBlockId ?? null,
+      afterBlockId: body.afterBlockId ?? null,
+    });
+  }
+
+  @Post("/:id/blocks/:blockId/duplicate")
+  async duplicateBlock(
+    @Param("id") id: string,
+    @Param("blockId") blockId: string,
+    @Body() body: { afterBlockId?: string | null },
+    @Auth() me: Session,
+  ): Promise<Block> {
+    const page = await this.show(id, me);
+    if (page.workspaceId) await this.assertEditor(page.workspaceId, me.userId);
+    return this.actors.ref(PageActor, id).call("page.block.duplicate", {
+      blockId,
+      afterBlockId: body.afterBlockId ?? null,
+    });
+  }
+
+  @Post("/:id/blocks/:blockId/archive")
+  async archiveBlock(
+    @Param("id") id: string,
+    @Param("blockId") blockId: string,
+    @Body() body: { archived?: boolean },
+    @Auth() me: Session,
+  ): Promise<void> {
+    const page = await this.show(id, me);
+    if (page.workspaceId) await this.assertEditor(page.workspaceId, me.userId);
+    await this.actors.ref(PageActor, id).cast("page.block.archive", {
+      blockId,
+      archived: body.archived ?? true,
+    });
   }
 
   @Delete("/:id/blocks/:blockId")

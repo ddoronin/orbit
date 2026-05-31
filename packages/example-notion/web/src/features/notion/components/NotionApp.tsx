@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/utils";
 import {
   SIDEBAR_STORAGE_KEY,
@@ -10,6 +10,19 @@ import { showErrorToast, useAppStore } from "../store";
 import { EditorPane } from "./EditorPane";
 import { LoginView } from "./LoginView";
 import { Sidebar } from "./Sidebar";
+
+interface ResizeSession {
+  startX: number;
+  startWidth: number;
+}
+
+function ToastMessage({ message }: { message: string }): JSX.Element {
+  return (
+    <div className="toast" role="status" aria-live="polite">
+      {message}
+    </div>
+  );
+}
 
 export function NotionApp(): JSX.Element {
   const init = useAppStore((state) => state.init);
@@ -24,49 +37,68 @@ export function NotionApp(): JSX.Element {
     ),
   );
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const resizeSessionRef = useRef<ResizeSession | null>(null);
 
   usePresenceSelectionSync();
 
   useEffect(() => {
-    init().catch((error) => {
+    init().catch((error: unknown) => {
       showErrorToast(error, "Failed to initialize app");
     });
   }, [init]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidth));
   }, [sidebarWidth]);
 
-  const startSidebarResize = (
-    event: React.PointerEvent<HTMLButtonElement>,
-  ): void => {
-    event.preventDefault();
-    const startX = event.clientX;
-    const startWidth = sidebarWidth;
+  const onSidebarPointerMove = useCallback((event: PointerEvent): void => {
+    const session = resizeSessionRef.current;
+    if (!session) return;
 
-    setIsResizingSidebar(true);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+    const nextWidth = computeNextSidebarWidth(
+      session.startWidth,
+      event.clientX - session.startX,
+    );
+    setSidebarWidth(nextWidth);
+  }, []);
 
-    const onMove = (moveEvent: PointerEvent) => {
-      const nextWidth = computeNextSidebarWidth(
-        startWidth,
-        moveEvent.clientX - startX,
-      );
-      setSidebarWidth(nextWidth);
+  const stopSidebarResize = useCallback((): void => {
+    if (!resizeSessionRef.current) return;
+
+    resizeSessionRef.current = null;
+    setIsResizingSidebar(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    window.removeEventListener("pointermove", onSidebarPointerMove);
+    window.removeEventListener("pointerup", stopSidebarResize);
+    window.removeEventListener("pointercancel", stopSidebarResize);
+  }, [onSidebarPointerMove]);
+
+  useEffect(() => {
+    return () => {
+      stopSidebarResize();
     };
+  }, [stopSidebarResize]);
 
-    const onUp = () => {
-      setIsResizingSidebar(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
+  const startSidebarResize = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>): void => {
+      event.preventDefault();
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  };
+      resizeSessionRef.current = {
+        startX: event.clientX,
+        startWidth: sidebarWidth,
+      };
+
+      setIsResizingSidebar(true);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      window.addEventListener("pointermove", onSidebarPointerMove);
+      window.addEventListener("pointerup", stopSidebarResize);
+      window.addEventListener("pointercancel", stopSidebarResize);
+    },
+    [onSidebarPointerMove, sidebarWidth, stopSidebarResize],
+  );
 
   if (!bootstrapped) {
     return <section className="login" />;
@@ -76,7 +108,7 @@ export function NotionApp(): JSX.Element {
     return (
       <>
         <LoginView />
-        {toast ? <div className="toast">{toast.message}</div> : null}
+        {toast ? <ToastMessage message={toast.message} /> : null}
       </>
     );
   }
@@ -86,31 +118,36 @@ export function NotionApp(): JSX.Element {
       <section
         id="app-view"
         className={cn(
-          "relative flex h-full",
+          "relative flex h-full min-h-0 overflow-hidden",
           isResizingSidebar && "select-none",
         )}
       >
-        <div className="h-full shrink-0" style={{ width: sidebarWidth }}>
+        <div
+          className="h-full min-h-0 shrink-0"
+          style={{ width: sidebarWidth }}
+        >
           <Sidebar />
         </div>
         <button
           type="button"
           aria-label="Resize left panel"
-          className="group relative h-full w-2 cursor-col-resize bg-transparent"
+          className="sidebar-resize-handle"
           onPointerDown={startSidebarResize}
         >
           <span
             className={cn(
-              "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-zinc-200 transition-colors",
-              isResizingSidebar ? "bg-zinc-400" : "group-hover:bg-zinc-300",
+              "sidebar-resize-handle-line",
+              isResizingSidebar
+                ? "sidebar-resize-handle-line-active"
+                : "sidebar-resize-handle-line-idle",
             )}
           />
         </button>
-        <div className="min-w-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1">
           <EditorPane />
         </div>
       </section>
-      {toast ? <div className="toast">{toast.message}</div> : null}
+      {toast ? <ToastMessage message={toast.message} /> : null}
     </>
   );
 }

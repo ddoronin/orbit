@@ -17,6 +17,52 @@ import {
 } from "../store";
 import type { Block, TypeMenuState } from "../types";
 
+type MenuSubsection = "turn-into" | "color" | "move-to" | null;
+type DropHint = { blockId: string; position: "before" | "after" } | null;
+
+const TEXT_COLOR_SWATCHES: Array<{ label: string; value: string | null }> = [
+  { label: "Default", value: null },
+  { label: "Gray", value: "#6b7280" },
+  { label: "Brown", value: "#7d6252" },
+  { label: "Terracotta", value: "#b4533f" },
+  { label: "Amber", value: "#a86a2f" },
+  { label: "Olive", value: "#7c6f2b" },
+  { label: "Green", value: "#15803d" },
+  { label: "Blue", value: "#295fa7" },
+  { label: "Indigo", value: "#5b4ba1" },
+  { label: "Rose", value: "#9c4b6a" },
+];
+
+const BG_COLOR_SWATCHES: Array<{ label: string; value: string | null }> = [
+  { label: "Default", value: null },
+  { label: "Gray", value: "#f3f4f6" },
+  { label: "Brown", value: "#f8eee6" },
+  { label: "Red", value: "#fee2e2" },
+  { label: "Orange", value: "#ffedd5" },
+  { label: "Yellow", value: "#fef9c3" },
+  { label: "Green", value: "#dcfce7" },
+  { label: "Blue", value: "#dbeafe" },
+  { label: "Purple", value: "#ede9fe" },
+  { label: "Pink", value: "#fce7f3" },
+];
+
+const LEGACY_COLOR_MAP: Record<string, string> = {
+  "#dc2626": "#b4533f",
+  "#ea580c": "#a86a2f",
+  "#a16207": "#7c6f2b",
+  "#2563eb": "#295fa7",
+  "#7c3aed": "#5b4ba1",
+  "#be185d": "#9c4b6a",
+};
+
+function normalizeBlockColor(
+  color: string | null | undefined,
+): string | undefined {
+  if (!color) return undefined;
+  const key = color.trim().toLowerCase();
+  return LEGACY_COLOR_MAP[key] ?? color;
+}
+
 function getSelectionOffsets(
   body: HTMLDivElement,
   selection: Selection,
@@ -73,6 +119,67 @@ function onBlockKeydown(
       focusBlock(page.rootBlockIds[index + 1], "start");
       return;
     }
+  }
+
+  if (
+    event.key === "Tab" &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  ) {
+    event.preventDefault();
+
+    if (event.shiftKey) {
+      const parentId = block.parentId;
+      if (!parentId) return;
+      const parentBlock = page.blocks[parentId];
+      const grandParentId = parentBlock?.parentId ?? null;
+
+      void useAppStore
+        .getState()
+        .moveBlock(block.id, grandParentId, parentId)
+        .catch((error) => {
+          showErrorToast(error, "Failed to outdent block");
+        });
+      return;
+    }
+
+    const index = page.rootBlockIds.indexOf(block.id);
+    if (index <= 0) return;
+
+    const previousId = page.rootBlockIds[index - 1];
+    const previousBlock = page.blocks[previousId];
+    if (!previousBlock) return;
+
+    const afterChildId =
+      previousBlock.children.length > 0
+        ? previousBlock.children[previousBlock.children.length - 1]
+        : null;
+
+    void useAppStore
+      .getState()
+      .moveBlock(block.id, previousId, afterChildId)
+      .catch((error) => {
+        showErrorToast(error, "Failed to indent block");
+      });
+    return;
+  }
+
+  if (
+    event.key.toLowerCase() === "d" &&
+    !event.shiftKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    event.metaKey
+  ) {
+    event.preventDefault();
+    void useAppStore
+      .getState()
+      .duplicateBlock(block.id)
+      .catch((error) => {
+        showErrorToast(error, "Failed to duplicate block");
+      });
+    return;
   }
 
   if (
@@ -167,14 +274,45 @@ function onBlockKeydown(
 function BlockRow({
   block,
   numberedCounter,
+  draggingBlockId,
+  dropHint,
+  onBlockDragStart,
+  onBlockDragOver,
+  onBlockDrop,
+  onBlockDragEnd,
 }: {
   block: Block;
   numberedCounter: number;
+  draggingBlockId: string | null;
+  dropHint: DropHint;
+  onBlockDragStart: (
+    event: React.DragEvent<HTMLButtonElement>,
+    blockId: string,
+  ) => void;
+  onBlockDragOver: (
+    event: React.DragEvent<HTMLDivElement>,
+    blockId: string,
+  ) => void;
+  onBlockDrop: (
+    event: React.DragEvent<HTMLDivElement>,
+    blockId: string,
+  ) => void;
+  onBlockDragEnd: () => void;
 }): JSX.Element {
   const setTypeMenu = useAppStore((state) => state.setTypeMenu);
   const deleteBlock = useAppStore((state) => state.deleteBlock);
   const updateBlock = useAppStore((state) => state.updateBlock);
+  const duplicateBlock = useAppStore((state) => state.duplicateBlock);
+  const moveBlock = useAppStore((state) => state.moveBlock);
+  const auth = useAppStore((state) => state.auth);
+  const currentPage = useAppStore((state) => state.currentPage);
+  const showToast = useAppStore((state) => state.showToast);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [submenu, setSubmenu] = useState<MenuSubsection>(null);
 
   useEffect(() => {
     const body = bodyRef.current;
@@ -190,46 +328,170 @@ function BlockRow({
 
   const placeholder = getBlockTypeConfig(block.type).placeholder;
 
+  const closeBlockMenu = () => {
+    setMenuPosition(null);
+    setSubmenu(null);
+  };
+
+  useEffect(() => {
+    if (!menuPosition) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        target.closest(
+          `.block-context-menu[data-block-menu-id="${block.id}"]`,
+        ) ||
+        target.closest(
+          `.block-handle-btn[data-block-menu-trigger="${block.id}"]`,
+        )
+      ) {
+        return;
+      }
+      closeBlockMenu();
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeBlockMenu();
+    };
+
+    const onScroll = () => closeBlockMenu();
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onEscape);
+    window.addEventListener("scroll", onScroll, true);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onEscape);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [block.id, menuPosition]);
+
+  const openBlockMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.top,
+      left: rect.right + 8,
+    });
+    setSubmenu(null);
+  };
+
+  const getSiblingContext = () => {
+    if (!currentPage) {
+      return {
+        siblings: [] as string[],
+        index: -1,
+        parentId: null as string | null,
+      };
+    }
+
+    const parentId = block.parentId ?? null;
+    const siblings = parentId
+      ? (currentPage.blocks[parentId]?.children ?? [])
+      : currentPage.rootBlockIds;
+    const index = siblings.indexOf(block.id);
+
+    return { siblings, index, parentId };
+  };
+
+  const moveWithinSiblings = async (
+    direction: "up" | "down" | "top" | "bottom",
+  ) => {
+    const { siblings, index, parentId } = getSiblingContext();
+    if (index < 0) return;
+
+    let afterBlockId: string | null = null;
+    if (direction === "up") {
+      if (index === 0) return;
+      afterBlockId = index - 2 >= 0 ? siblings[index - 2] : null;
+    } else if (direction === "down") {
+      if (index >= siblings.length - 1) return;
+      afterBlockId = siblings[index + 1] ?? null;
+    } else if (direction === "top") {
+      afterBlockId = null;
+    } else {
+      const withoutCurrent = siblings.filter((id) => id !== block.id);
+      afterBlockId =
+        withoutCurrent.length > 0 ? (withoutCurrent.at(-1) ?? null) : null;
+    }
+
+    await moveBlock(block.id, parentId, afterBlockId);
+    closeBlockMenu();
+  };
+
+  const copyLinkToBlock = async () => {
+    try {
+      const url = new URL(window.location.href);
+      url.hash = `block-${block.id}`;
+      await navigator.clipboard.writeText(url.toString());
+      showToast("Copied link to block");
+      closeBlockMenu();
+    } catch (error) {
+      showErrorToast(error, "Failed to copy block link");
+    }
+  };
+
+  const formattedUpdatedAt = new Date(
+    currentPage?.updatedAt ?? Date.now(),
+  ).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const blockClasses = [
+    "block",
+    draggingBlockId === block.id ? "block-dragging" : "",
+    dropHint?.blockId === block.id && dropHint.position === "before"
+      ? "block-drop-before"
+      : "",
+    dropHint?.blockId === block.id && dropHint.position === "after"
+      ? "block-drop-after"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      className="block"
+      id={`block-${block.id}`}
+      className={blockClasses}
       data-block-id={block.id}
       data-type={block.type}
       data-checked={block.type === "todo" ? String(!!block.checked) : undefined}
+      onDragOver={(event) => onBlockDragOver(event, block.id)}
+      onDrop={(event) => {
+        void onBlockDrop(event, block.id);
+      }}
     >
       <div className="block-gutter">
         <Button
           variant="ghost"
           size="icon"
-          className="gutter-btn type-btn"
-          title="Change type"
-          onClick={(event) => {
-            event.stopPropagation();
-            const rect = (
-              event.currentTarget as HTMLButtonElement
-            ).getBoundingClientRect();
-            setTypeMenu({
-              blockId: block.id,
-              top: rect.bottom + window.scrollY + 4,
-              left: rect.left + window.scrollX,
-              fromSlash: false,
-            });
+          className="gutter-btn block-handle-btn"
+          data-block-menu-trigger={block.id}
+          title="Open block menu"
+          draggable
+          onDragStart={(event) => {
+            closeBlockMenu();
+            onBlockDragStart(event, block.id);
           }}
+          onDragEnd={onBlockDragEnd}
+          onClick={openBlockMenu}
         >
-          p
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="gutter-btn delete-btn"
-          title="Delete"
-          onClick={() => {
-            deleteBlock(block.id).catch((error) => {
-              showErrorToast(error, "Failed to delete block");
-            });
-          }}
-        >
-          x
+          <span className="block-handle-dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </span>
         </Button>
       </div>
 
@@ -249,13 +511,17 @@ function BlockRow({
 
       <div
         ref={bodyRef}
-        className="block-body"
+        className={`block-body${block.backgroundColor ? " block-body-highlighted" : ""}`}
         contentEditable={block.type !== "divider"}
         suppressContentEditableWarning
         data-placeholder={placeholder}
         data-number={
           block.type === "numbered_list" ? String(numberedCounter) : undefined
         }
+        style={{
+          color: normalizeBlockColor(block.color),
+          backgroundColor: block.backgroundColor ?? undefined,
+        }}
         onFocus={() => schedulePresenceUpdate()}
         onBlur={() => {
           scheduleBlockSave(block.id, bodyRef.current?.textContent ?? "");
@@ -274,6 +540,203 @@ function BlockRow({
           onBlockKeydown(event, block, body, setTypeMenu);
         }}
       />
+
+      {menuPosition ? (
+        <div
+          className="block-context-menu"
+          data-block-menu-id={block.id}
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+        >
+          <div className="block-context-label">
+            {getBlockTypeConfig(block.type).label}
+          </div>
+
+          <button
+            className="block-context-item"
+            onMouseEnter={() => setSubmenu("turn-into")}
+          >
+            <span>Turn into</span>
+            <span className="block-context-chevron">&gt;</span>
+          </button>
+
+          <button
+            className="block-context-item"
+            onMouseEnter={() => setSubmenu("color")}
+          >
+            <span>Color</span>
+            <span className="block-context-chevron">&gt;</span>
+          </button>
+
+          <div className="block-context-divider" />
+
+          <button className="block-context-item" onClick={copyLinkToBlock}>
+            <span>Copy link to block</span>
+            <span className="block-context-shortcut">Cmd+Shift+L</span>
+          </button>
+
+          <button
+            className="block-context-item"
+            onClick={() => {
+              duplicateBlock(block.id)
+                .then(() => closeBlockMenu())
+                .catch((error) => {
+                  showErrorToast(error, "Failed to duplicate block");
+                });
+            }}
+          >
+            <span>Duplicate</span>
+            <span className="block-context-shortcut">Cmd+D</span>
+          </button>
+
+          <button
+            className="block-context-item"
+            onMouseEnter={() => setSubmenu("move-to")}
+          >
+            <span>Move to</span>
+            <span className="block-context-chevron">&gt;</span>
+          </button>
+
+          <button
+            className="block-context-item block-context-item-danger"
+            onClick={() => {
+              deleteBlock(block.id)
+                .then(() => closeBlockMenu())
+                .catch((error) => {
+                  showErrorToast(error, "Failed to delete block");
+                });
+            }}
+          >
+            <span>Delete</span>
+            <span className="block-context-shortcut">Del</span>
+          </button>
+
+          <button
+            className="block-context-item"
+            onClick={() => {
+              showToast("Comments are coming soon");
+              closeBlockMenu();
+            }}
+          >
+            <span>Comment</span>
+          </button>
+
+          <div className="block-context-divider" />
+          <div className="block-context-meta">
+            <div>Last edited by {auth?.displayName ?? "Unknown"}</div>
+            <div>{formattedUpdatedAt}</div>
+          </div>
+
+          {submenu === "turn-into" ? (
+            <div className="block-context-submenu">
+              {BLOCK_TYPES.map((entry) => (
+                <button
+                  key={entry.type}
+                  className="block-context-item"
+                  onClick={() => {
+                    updateBlock(block.id, { type: entry.type }).catch(
+                      (error) => {
+                        showErrorToast(error, "Failed to update block type");
+                      },
+                    );
+                    closeBlockMenu();
+                    focusBlock(block.id);
+                  }}
+                >
+                  <span>{entry.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {submenu === "color" ? (
+            <div className="block-context-submenu block-context-submenu-wide">
+              <div className="block-context-subtitle">Text</div>
+              {TEXT_COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={`text-${swatch.label}`}
+                  className="block-context-item"
+                  onClick={() => {
+                    updateBlock(block.id, { color: swatch.value }).catch(
+                      (error) => {
+                        showErrorToast(error, "Failed to update block color");
+                      },
+                    );
+                    closeBlockMenu();
+                  }}
+                >
+                  <span>{swatch.label}</span>
+                </button>
+              ))}
+
+              <div className="block-context-subtitle">Background</div>
+              {BG_COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={`bg-${swatch.label}`}
+                  className="block-context-item"
+                  onClick={() => {
+                    updateBlock(block.id, {
+                      backgroundColor: swatch.value,
+                    }).catch((error) => {
+                      showErrorToast(
+                        error,
+                        "Failed to update block background",
+                      );
+                    });
+                    closeBlockMenu();
+                  }}
+                >
+                  <span>{swatch.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {submenu === "move-to" ? (
+            <div className="block-context-submenu">
+              <button
+                className="block-context-item"
+                onClick={() => {
+                  void moveWithinSiblings("up").catch((error) => {
+                    showErrorToast(error, "Failed to move block");
+                  });
+                }}
+              >
+                <span>Move up</span>
+              </button>
+              <button
+                className="block-context-item"
+                onClick={() => {
+                  void moveWithinSiblings("down").catch((error) => {
+                    showErrorToast(error, "Failed to move block");
+                  });
+                }}
+              >
+                <span>Move down</span>
+              </button>
+              <button
+                className="block-context-item"
+                onClick={() => {
+                  void moveWithinSiblings("top").catch((error) => {
+                    showErrorToast(error, "Failed to move block");
+                  });
+                }}
+              >
+                <span>Move to top</span>
+              </button>
+              <button
+                className="block-context-item"
+                onClick={() => {
+                  void moveWithinSiblings("bottom").catch((error) => {
+                    showErrorToast(error, "Failed to move block");
+                  });
+                }}
+              >
+                <span>Move to bottom</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -337,10 +800,13 @@ export function EditorPane(): JSX.Element {
   const presence = useAppStore((state) => state.presence);
   const setPageTitle = useAppStore((state) => state.setPageTitle);
   const addBlock = useAppStore((state) => state.addBlock);
+  const moveBlock = useAppStore((state) => state.moveBlock);
 
   useRemotePresenceRenderer();
 
   const [title, setTitle] = useState(currentPage?.title ?? "");
+  const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<DropHint>(null);
   const titleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -378,6 +844,113 @@ export function EditorPane(): JSX.Element {
     (entry) => entry.userId !== auth?.userId,
   );
 
+  const clearDragState = () => {
+    setDraggingBlockId(null);
+    setDropHint(null);
+  };
+
+  const resolveAfterBlockId = (
+    rootIds: string[],
+    draggingId: string,
+    targetId: string,
+    position: "before" | "after",
+  ): string | null => {
+    const withoutDragging = rootIds.filter((id) => id !== draggingId);
+    if (position === "after") {
+      return targetId;
+    }
+
+    const targetIndex = withoutDragging.indexOf(targetId);
+    if (targetIndex <= 0) return null;
+    return withoutDragging[targetIndex - 1] ?? null;
+  };
+
+  const onBlockDragStart = (
+    event: React.DragEvent<HTMLButtonElement>,
+    blockId: string,
+  ) => {
+    setDraggingBlockId(blockId);
+    setDropHint(null);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", blockId);
+  };
+
+  const onBlockDragOver = (
+    event: React.DragEvent<HTMLDivElement>,
+    blockId: string,
+  ) => {
+    if (!draggingBlockId || draggingBlockId === blockId) return;
+    event.preventDefault();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position =
+      event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+
+    setDropHint((current) => {
+      if (current?.blockId === blockId && current.position === position) {
+        return current;
+      }
+      return { blockId, position };
+    });
+    event.dataTransfer.dropEffect = "move";
+  };
+
+  const onBlockDrop = async (
+    event: React.DragEvent<HTMLDivElement>,
+    targetBlockId: string,
+  ) => {
+    event.preventDefault();
+    if (!currentPage || !draggingBlockId || draggingBlockId === targetBlockId) {
+      clearDragState();
+      return;
+    }
+
+    const hintPosition =
+      dropHint?.blockId === targetBlockId ? dropHint.position : "after";
+    const afterBlockId = resolveAfterBlockId(
+      currentPage.rootBlockIds,
+      draggingBlockId,
+      targetBlockId,
+      hintPosition,
+    );
+
+    try {
+      await moveBlock(draggingBlockId, null, afterBlockId);
+    } catch (error) {
+      showErrorToast(error, "Failed to move block");
+    } finally {
+      clearDragState();
+    }
+  };
+
+  const onTailDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!draggingBlockId) return;
+    event.preventDefault();
+    setDropHint({ blockId: "__tail__", position: "after" });
+    event.dataTransfer.dropEffect = "move";
+  };
+
+  const onTailDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!currentPage || !draggingBlockId) {
+      clearDragState();
+      return;
+    }
+
+    const withoutDragging = currentPage.rootBlockIds.filter(
+      (id) => id !== draggingBlockId,
+    );
+    const afterBlockId = withoutDragging.at(-1) ?? null;
+
+    try {
+      await moveBlock(draggingBlockId, null, afterBlockId);
+    } catch (error) {
+      showErrorToast(error, "Failed to move block");
+    } finally {
+      clearDragState();
+    }
+  };
+
   return (
     <main className="page-pane">
       <article>
@@ -386,8 +959,8 @@ export function EditorPane(): JSX.Element {
             {others.map((entry) => (
               <span
                 key={entry.userId}
-                className="avatar"
-                style={{ background: entry.color }}
+                className="avatar presence-avatar"
+                style={{ "--avatar-color": entry.color } as React.CSSProperties}
                 title={entry.displayName}
               >
                 {initials(entry.displayName)}
@@ -420,9 +993,31 @@ export function EditorPane(): JSX.Element {
             if (!block) return null;
             const number = numberedCounters.get(id) ?? 0;
             return (
-              <BlockRow key={block.id} block={block} numberedCounter={number} />
+              <BlockRow
+                key={block.id}
+                block={block}
+                numberedCounter={number}
+                draggingBlockId={draggingBlockId}
+                dropHint={dropHint}
+                onBlockDragStart={onBlockDragStart}
+                onBlockDragOver={onBlockDragOver}
+                onBlockDrop={onBlockDrop}
+                onBlockDragEnd={clearDragState}
+              />
             );
           })}
+
+          {draggingBlockId ? (
+            <div
+              className={`blocks-drop-tail${dropHint?.blockId === "__tail__" ? " is-target" : ""}`}
+              onDragOver={onTailDragOver}
+              onDrop={(event) => {
+                void onTailDrop(event);
+              }}
+            >
+              Drop at bottom
+            </div>
+          ) : null}
         </div>
 
         <Button

@@ -1,0 +1,11 @@
+@layer base {
+  .shadcn-theme-root {
+    color-scheme: light dark;
+  }
+}
+
+@layer components {
+  .shadcn-card {
+    @apply rounded-xl border border-border bg-card text-card-foreground;
+  }
+}

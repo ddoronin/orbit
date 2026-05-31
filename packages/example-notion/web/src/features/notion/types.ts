@@ -16,6 +16,11 @@ export interface Block {
   text: string;
   checked?: boolean;
   language?: string;
+  color?: string | null;
+  backgroundColor?: string | null;
+  parentId: string | null;
+  order: string;
+  archived?: boolean;
   children: string[];
 }
 
@@ -100,12 +105,29 @@ export interface AppStore {
   createPage: () => Promise<void>;
   openPage: (pageId: string) => Promise<void>;
   setPageTitle: (title: string) => Promise<void>;
+  createBlock: (
+    type?: BlockType,
+    parentBlockId?: string | null,
+    afterBlockId?: string | null,
+    text?: string,
+    focusAt?: "start" | "end",
+  ) => Promise<Block>;
   addBlock: (
     type?: BlockType,
     afterBlockId?: string | null,
     text?: string,
     focusAt?: "start" | "end",
   ) => Promise<Block>;
+  moveBlock: (
+    blockId: string,
+    parentBlockId?: string | null,
+    afterBlockId?: string | null,
+  ) => Promise<void>;
+  duplicateBlock: (
+    blockId: string,
+    afterBlockId?: string | null,
+  ) => Promise<Block>;
+  archiveBlock: (blockId: string, archived?: boolean) => Promise<void>;
   updateBlock: (blockId: string, patch: Partial<Block>) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   setTypeMenu: (menu: TypeMenuState | null) => void;

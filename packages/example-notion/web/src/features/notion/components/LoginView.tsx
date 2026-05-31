@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { useAppStore, showErrorToast } from "../store";
@@ -6,18 +6,29 @@ import { useAppStore, showErrorToast } from "../store";
 export function LoginView(): JSX.Element {
   const login = useAppStore((state) => state.login);
   const [name, setName] = useState("");
+  const trimmedName = name.trim();
+  const canSubmit = trimmedName.length > 0;
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  const onNameChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setName(event.target.value);
+    },
+    [],
+  );
 
-    try {
-      await login(trimmed);
-    } catch (error) {
-      showErrorToast(error, "Login failed");
-    }
-  };
+  const onSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!canSubmit) return;
+
+      try {
+        await login(trimmedName);
+      } catch (error) {
+        showErrorToast(error, "Login failed");
+      }
+    },
+    [canSubmit, login, trimmedName],
+  );
 
   return (
     <section className="flex h-full items-center justify-center bg-gradient-to-b from-[#faf9f7] to-[#f1eee8]">
@@ -31,19 +42,23 @@ export function LoginView(): JSX.Element {
         </p>
 
         <form onSubmit={onSubmit}>
-          <label className="mb-4 block text-sm text-zinc-500">
+          <label
+            htmlFor="display-name"
+            className="mb-4 block text-sm text-zinc-500"
+          >
             Display name
             <Input
+              id="display-name"
               type="text"
               placeholder="Alice"
               autoComplete="off"
               required
               className="mt-1"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={onNameChange}
             />
           </label>
-          <Button type="submit" className="mt-2 w-full">
+          <Button type="submit" className="mt-2 w-full" disabled={!canSubmit}>
             Enter
           </Button>
         </form>

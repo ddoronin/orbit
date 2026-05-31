@@ -4,13 +4,13 @@ export const STORAGE_KEY = "orbit-notion:auth";
 export const BLOCK_SAVE_DEBOUNCE_MS = 50;
 
 export const PRESENCE_COLORS = [
-  "#e03e3e",
-  "#d9730d",
-  "#dfab01",
-  "#0f7b6c",
-  "#0b6e99",
-  "#6940a5",
-  "#ad1a72",
+  "#c7859f",
+  "#d39a70",
+  "#c0ad70",
+  "#6fa89b",
+  "#729fc6",
+  "#8b86c9",
+  "#c68ba8",
 ];
 
 export const BLOCK_TYPES: Array<{

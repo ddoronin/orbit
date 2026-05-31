@@ -16,6 +16,11 @@ export interface Block {
   text: string;
   checked?: boolean;
   language?: string;
+  color?: string | null;
+  backgroundColor?: string | null;
+  parentId: string | null;
+  order: string;
+  archived?: boolean;
   children: string[];
 }
 

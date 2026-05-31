@@ -282,6 +282,78 @@ function connectSocket(pageId: string): void {
   });
 }
 
+function detachBlockFromTree(
+  blockId: string,
+  rootBlockIds: string[],
+  blocks: Record<string, Block>,
+): { rootBlockIds: string[]; blocks: Record<string, Block> } {
+  let nextRoot = rootBlockIds.filter((id) => id !== blockId);
+  const nextBlocks = { ...blocks };
+
+  for (const [id, block] of Object.entries(blocks)) {
+    if (!block.children.includes(blockId)) continue;
+    nextBlocks[id] = {
+      ...block,
+      children: block.children.filter((childId) => childId !== blockId),
+    };
+  }
+
+  return { rootBlockIds: nextRoot, blocks: nextBlocks };
+}
+
+function insertBlockIntoTree(
+  blockId: string,
+  parentBlockId: string | null,
+  afterBlockId: string | null,
+  rootBlockIds: string[],
+  blocks: Record<string, Block>,
+): { rootBlockIds: string[]; blocks: Record<string, Block> } {
+  const detached = detachBlockFromTree(blockId, rootBlockIds, blocks);
+  const nextBlocks = { ...detached.blocks };
+  let nextRoot = detached.rootBlockIds;
+
+  const insertAfter = (ids: string[]): string[] => {
+    const afterIdx = afterBlockId ? ids.indexOf(afterBlockId) : -1;
+    const at = afterIdx >= 0 ? afterIdx + 1 : ids.length;
+    const next = [...ids];
+    next.splice(at, 0, blockId);
+    return next;
+  };
+
+  if (parentBlockId && nextBlocks[parentBlockId]) {
+    const parent = nextBlocks[parentBlockId];
+    nextBlocks[parentBlockId] = {
+      ...parent,
+      children: insertAfter(parent.children.filter((id) => id !== blockId)),
+    };
+  } else {
+    nextRoot = insertAfter(nextRoot);
+  }
+
+  return {
+    rootBlockIds: nextRoot,
+    blocks: nextBlocks,
+  };
+}
+
+function collectSubtreeIds(
+  blocks: Record<string, Block>,
+  blockId: string,
+): string[] {
+  const out: string[] = [];
+  const stack = [blockId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    const block = blocks[id];
+    if (!block || out.includes(id)) continue;
+    out.push(id);
+    for (const childId of block.children) {
+      stack.push(childId);
+    }
+  }
+  return out;
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   auth: null,
   workspace: null,
@@ -454,8 +526,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     });
   },
 
-  addBlock: async (
+  createBlock: async (
     type = "paragraph",
+    parentBlockId = null,
     afterBlockId = null,
     text = "",
     focusAt = "end",
@@ -465,11 +538,124 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const block = await api<Block>(`/pages/${page.pageId}/blocks`, {
       method: "POST",
-      body: JSON.stringify({ type, text, afterBlockId }),
+      body: JSON.stringify({ type, text, parentBlockId, afterBlockId }),
     });
 
     focusBlock(block.id, focusAt);
     return block;
+  },
+
+  addBlock: async (
+    type = "paragraph",
+    afterBlockId = null,
+    text = "",
+    focusAt = "end",
+  ) => {
+    return get().createBlock(type, null, afterBlockId, text, focusAt);
+  },
+
+  moveBlock: async (blockId, parentBlockId = null, afterBlockId = null) => {
+    const page = get().currentPage;
+    if (!page || !page.blocks[blockId]) return;
+
+    const moved = await api<Block>(
+      `/pages/${page.pageId}/blocks/${blockId}/move`,
+      {
+        method: "POST",
+        body: JSON.stringify({ parentBlockId, afterBlockId }),
+      },
+    );
+
+    set((state) => {
+      if (!state.currentPage || !state.currentPage.blocks[moved.id]) {
+        return state;
+      }
+
+      const mergedBlocks = {
+        ...state.currentPage.blocks,
+        [moved.id]: moved,
+      };
+      const nextTree = insertBlockIntoTree(
+        moved.id,
+        parentBlockId,
+        afterBlockId,
+        state.currentPage.rootBlockIds,
+        mergedBlocks,
+      );
+
+      return {
+        ...state,
+        currentPage: {
+          ...state.currentPage,
+          blocks: nextTree.blocks,
+          rootBlockIds: nextTree.rootBlockIds,
+        },
+      };
+    });
+  },
+
+  duplicateBlock: async (blockId, afterBlockId = null) => {
+    const page = get().currentPage;
+    if (!page || !page.blocks[blockId]) {
+      throw new Error("Block not found");
+    }
+
+    const duplicated = await api<Block>(
+      `/pages/${page.pageId}/blocks/${blockId}/duplicate`,
+      {
+        method: "POST",
+        body: JSON.stringify({ afterBlockId }),
+      },
+    );
+
+    focusBlock(duplicated.id);
+    return duplicated;
+  },
+
+  archiveBlock: async (blockId, archived = true) => {
+    const page = get().currentPage;
+    if (!page || !page.blocks[blockId]) return;
+
+    const subtree = collectSubtreeIds(page.blocks, blockId);
+    for (const id of subtree) {
+      blockPendingText.delete(id);
+      blockInFlightText.delete(id);
+      const timer = blockSaveTimers.get(id);
+      if (timer) {
+        clearTimeout(timer);
+        blockSaveTimers.delete(id);
+      }
+    }
+
+    set((state) => {
+      if (!state.currentPage) return state;
+
+      const nextBlocks = { ...state.currentPage.blocks };
+      for (const id of subtree) {
+        if (!nextBlocks[id]) continue;
+        nextBlocks[id] = { ...nextBlocks[id], archived: true };
+      }
+
+      const detached = detachBlockFromTree(
+        blockId,
+        state.currentPage.rootBlockIds,
+        nextBlocks,
+      );
+
+      return {
+        ...state,
+        currentPage: {
+          ...state.currentPage,
+          blocks: detached.blocks,
+          rootBlockIds: detached.rootBlockIds,
+        },
+      };
+    });
+
+    await api<void>(`/pages/${page.pageId}/blocks/${blockId}/archive`, {
+      method: "POST",
+      body: JSON.stringify({ archived }),
+    });
   },
 
   updateBlock: async (blockId, patch) => {
@@ -500,35 +686,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   deleteBlock: async (blockId) => {
-    const page = get().currentPage;
-    if (!page) return;
-
-    blockPendingText.delete(blockId);
-    const timer = blockSaveTimers.get(blockId);
-    if (timer) {
-      clearTimeout(timer);
-      blockSaveTimers.delete(blockId);
-    }
-
-    set((state) => {
-      if (!state.currentPage) return state;
-      const blocks = { ...state.currentPage.blocks };
-      delete blocks[blockId];
-      return {
-        ...state,
-        currentPage: {
-          ...state.currentPage,
-          blocks,
-          rootBlockIds: state.currentPage.rootBlockIds.filter(
-            (id) => id !== blockId,
-          ),
-        },
-      };
-    });
-
-    await api<void>(`/pages/${page.pageId}/blocks/${blockId}`, {
-      method: "DELETE",
-    });
+    await get().archiveBlock(blockId, true);
   },
 
   applySocketMessage: (raw) => {
@@ -649,6 +807,113 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (inFlight != null && inFlight === incoming.text) {
           blockInFlightText.delete(incoming.id);
         }
+        break;
+      }
+
+      case "page.block.moved": {
+        const moved = payload.block as Block;
+        const parentBlockId =
+          (payload.parentBlockId as string | null | undefined) ??
+          moved.parentId ??
+          null;
+        const afterBlockId =
+          (payload.afterBlockId as string | null | undefined) ?? null;
+
+        set((state) => {
+          if (!state.currentPage) return state;
+
+          const mergedBlocks = {
+            ...state.currentPage.blocks,
+            [moved.id]: moved,
+          };
+          const nextTree = insertBlockIntoTree(
+            moved.id,
+            parentBlockId,
+            afterBlockId,
+            state.currentPage.rootBlockIds,
+            mergedBlocks,
+          );
+
+          return {
+            ...state,
+            currentPage: {
+              ...state.currentPage,
+              blocks: nextTree.blocks,
+              rootBlockIds: nextTree.rootBlockIds,
+            },
+          };
+        });
+        break;
+      }
+
+      case "page.block.duplicated": {
+        const blocks = (payload.blocks as Block[] | undefined) ?? [];
+        const rootBlockId = payload.rootBlockId as string | undefined;
+        const parentBlockId =
+          (payload.parentBlockId as string | null | undefined) ?? null;
+        const afterBlockId =
+          (payload.afterBlockId as string | null | undefined) ?? null;
+
+        if (!rootBlockId || blocks.length === 0) break;
+
+        set((state) => {
+          if (!state.currentPage) return state;
+
+          const mergedBlocks = { ...state.currentPage.blocks };
+          for (const block of blocks) {
+            mergedBlocks[block.id] = block;
+          }
+
+          const nextTree = insertBlockIntoTree(
+            rootBlockId,
+            parentBlockId,
+            afterBlockId,
+            state.currentPage.rootBlockIds,
+            mergedBlocks,
+          );
+
+          return {
+            ...state,
+            currentPage: {
+              ...state.currentPage,
+              blocks: nextTree.blocks,
+              rootBlockIds: nextTree.rootBlockIds,
+            },
+          };
+        });
+        break;
+      }
+
+      case "page.block.archived": {
+        const affectedIds = (payload.affectedIds as string[] | undefined) ?? [
+          payload.blockId as string,
+        ];
+        const rootId = payload.blockId as string;
+
+        set((state) => {
+          if (!state.currentPage) return state;
+
+          const nextBlocks = { ...state.currentPage.blocks };
+          for (const id of affectedIds) {
+            if (!nextBlocks[id]) continue;
+            nextBlocks[id] = { ...nextBlocks[id], archived: true };
+          }
+
+          const detached = detachBlockFromTree(
+            rootId,
+            state.currentPage.rootBlockIds,
+            nextBlocks,
+          );
+
+          return {
+            ...state,
+            currentPage: {
+              ...state.currentPage,
+              blocks: detached.blocks,
+              rootBlockIds: detached.rootBlockIds,
+            },
+          };
+        });
         break;
       }
 

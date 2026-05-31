@@ -1,11 +1,11 @@
-# @orbit/queues
+# @orbitstack/queues
 
 Decorator-based consumers and producers for Cloudflare Queues.
 
 ## Consumer
 
 ```ts
-import { QueueConsumer, OrbitConsumer, Retry, type QueueMessage } from '@orbit/queues';
+import { QueueConsumer, OrbitConsumer, Retry, type QueueMessage } from '@orbitstack/queues';
 
 interface EmailJob { to: string; template: string; data: unknown }
 
@@ -28,7 +28,7 @@ export class EmailWorker extends OrbitConsumer<EmailJob> {
 ## Producer
 
 ```ts
-import { QueueProducer, createQueueProducerToken } from '@orbit/queues';
+import { QueueProducer, createQueueProducerToken } from '@orbitstack/queues';
 
 const EMAIL_QUEUE = createQueueProducerToken<EmailJob>('email-queue');
 
@@ -44,7 +44,7 @@ class OrderService {
 ## Wiring into a Worker
 
 ```ts
-import { createQueueHandler } from '@orbit/queues';
+import { createQueueHandler } from '@orbitstack/queues';
 
 export default {
   ...createWorker(App),
@@ -62,5 +62,5 @@ export default {
 
 ## See also
 
-- [`@orbit/core`](../core) — DI, `QUEUE_TOKEN(name)`
-- [`@orbit/app`](../app) — `bindings.Queue` declaration
+- [`@orbitstack/core`](../core) — DI, `QUEUE_TOKEN(name)`
+- [`@orbitstack/app`](../app) — `bindings.Queue` declaration

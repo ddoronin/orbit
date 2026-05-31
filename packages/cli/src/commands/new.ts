@@ -1,5 +1,5 @@
 /**
- * `orbit new <name>` — Scaffold a new Orbit project.
+ * `orbitstack new <name>` — Scaffold a new Orbit project.
  */
 
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -15,9 +15,9 @@ const SCAFFOLD_AGENTS_MD = `# Orbit App - Guide for Coding Agents
 
 ## Start Here
 
-- Import from '@orbit/app' only.
-- Run 'orbit build' after actor or wrangler changes.
-- Use 'orbit build --strict-wiring' for fail-fast preflight checks.
+- Import from '@orbitstack/app' only.
+- Run 'orbitstack build' after actor or wrangler changes.
+- Use 'orbitstack build --strict-wiring' for fail-fast preflight checks.
 - Canonical full-app reference: packages/example-notion in the Orbit monorepo.
 
 ## Adding an Actor
@@ -30,13 +30,13 @@ const SCAFFOLD_AGENTS_MD = `# Orbit App - Guide for Coding Agents
 ## WebSockets
 
 - Raw actor WS: '{ type, payload }' for simple actor dispatch.
-- Phoenix channels: '@orbit/channels' with '{ event, topic, payload, ref }'.
+- Phoenix channels: '@orbitstack/channels' with '{ event, topic, payload, ref }'.
 - Do not mix the two wire formats.
 
 ## Agent Self-Check
 
-- Run 'orbit build --strict-wiring' before deploy after actor or wrangler edits.
-- Use 'orbit generate actor|controller|service|channel <Name>' for boilerplate.
+- Run 'orbitstack build --strict-wiring' before deploy after actor or wrangler edits.
+- Use 'orbitstack generate actor|controller|service|channel <Name>' for boilerplate.
 
 ## Common Failures
 
@@ -50,10 +50,10 @@ description: Orbit app checklist for coding agents.
 alwaysApply: true
 ---
 
-- Import app code from '@orbit/app'.
+- Import app code from '@orbitstack/app'.
 - Keep registrations centralized in one '@OrbitApp({ ... })'.
-- After actor/wrangler/export edits, run 'orbit build --strict-wiring'.
-- For new files, prefer 'orbit generate ...' commands.
+- After actor/wrangler/export edits, run 'orbitstack build --strict-wiring'.
+- For new files, prefer 'orbitstack generate ...' commands.
 - Copy complex wiring patterns from packages/example-notion.
 `;
 
@@ -65,7 +65,7 @@ globs:
 
 - For each '@Actor("Name")', ensure a matching wrangler 'class_name'.
 - Keep Durable Object bindings and '[[migrations]]' entries in sync.
-- Use 'orbit build --strict-wiring' to validate wiring changes.
+- Use 'orbitstack build --strict-wiring' to validate wiring changes.
 `;
 
 const SCAFFOLD_RULE_ACTORS = `---
@@ -84,7 +84,7 @@ export async function newProject(args: string[]): Promise<void> {
   const name = args[0];
   if (!name) {
     console.error(
-      "Usage: orbit new <project-name> [--template=api|realtime|full]",
+      "Usage: orbitstack new <project-name> [--template=api|realtime|full]",
     );
     process.exit(1);
   }
@@ -127,17 +127,17 @@ export async function newProject(args: string[]): Promise<void> {
           node: ">=23 <24",
         },
         scripts: {
-          dev: "orbit dev",
-          build: "orbit build",
-          deploy: "orbit deploy",
+          dev: "orbitstack dev",
+          build: "orbitstack build",
+          deploy: "orbitstack deploy",
           test: "vitest run",
         },
         dependencies: {
-          "@orbit/app": "^0.1.0",
+          "@orbitstack/app": "^0.1.0",
         },
         devDependencies: {
-          "@orbit/cli": "^0.1.0",
-          "@orbit/testing": "^0.1.0",
+          "@orbitstack/cli": "^0.1.0",
+          "@orbitstack/testing": "^0.1.0",
           typescript: "^5.7.0",
           vitest: "^3.0.0",
           wrangler: "^3.0.0",
@@ -206,7 +206,7 @@ new_classes = ["ChatRoom"]
   // orbit.config.ts
   writeFileSync(
     join(projectDir, "orbit.config.ts"),
-    `import { defineConfig } from '@orbit/cli';
+    `import { defineConfig } from '@orbitstack/cli';
 
 export default defineConfig({
   entry: 'src/main.ts',
@@ -221,7 +221,7 @@ export default defineConfig({
   // App service
   writeFileSync(
     join(projectDir, "src/app.service.ts"),
-    `import { Injectable } from '@orbit/app';
+    `import { Injectable } from '@orbitstack/app';
 
 @Injectable()
 export class AppService {
@@ -238,7 +238,7 @@ export class AppService {
 
     writeFileSync(
       join(projectDir, "src/chat/chat.actor.ts"),
-      `import { Actor, Handle, OnAlarm, OrbitActor } from '@orbit/app';
+      `import { Actor, Handle, OnAlarm, OrbitActor } from '@orbitstack/app';
 
 interface ChatState {
   messages: { text: string; userId: string; ts: number }[];
@@ -287,7 +287,7 @@ export class ChatRoomActor extends OrbitActor<ChatState> {
 
   // Main entry
   const mainSource = hasRealtimeActor
-    ? `import { OrbitApp, createWorker, Resource, Get, Inject } from '@orbit/app';
+    ? `import { OrbitApp, createWorker, Resource, Get, Inject } from '@orbitstack/app';
 import { ChatRoomActor } from './chat/chat.actor.js';
 import { AppService } from './app.service.js';
 
@@ -312,7 +312,7 @@ const worker = createWorker(App);
 export default worker;
 export const { ChatRoom } = worker;
 `
-    : `import { OrbitApp, createWorker, Resource, Get, Inject } from '@orbit/app';
+    : `import { OrbitApp, createWorker, Resource, Get, Inject } from '@orbitstack/app';
 import { AppService } from './app.service.js';
 
 @Resource('/')
@@ -371,6 +371,6 @@ Project created successfully!
 
   cd ${name}
   npm install
-  orbit dev
+  orbitstack dev
 `);
 }

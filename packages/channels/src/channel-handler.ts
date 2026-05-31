@@ -6,7 +6,7 @@
  * Hibernation API callbacks.
  */
 
-import type { ActorRef } from '@orbit/actors';
+import type { ActorRef } from '@orbitstack/actors';
 import { OrbitChannel, type ChannelMetadata, ORBIT_CHANNEL_META } from './channel.js';
 import { SocketImpl, type Socket } from './socket.js';
 import {

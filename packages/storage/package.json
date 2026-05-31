@@ -1,5 +1,5 @@
 {
-  "name": "@orbit/storage",
+  "name": "@orbitstack/storage",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@orbit/core": "*"
+    "@orbitstack/core": "*"
   },
   "devDependencies": {
     "typescript": "*",

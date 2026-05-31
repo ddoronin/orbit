@@ -1,4 +1,4 @@
-// @orbit/core — public API
+// @orbitstack/core — public API
 
 export {
   Container,

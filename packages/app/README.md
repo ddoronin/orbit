@@ -1,6 +1,6 @@
-# @orbit/app
+# @orbitstack/app
 
-The umbrella package. Pulls in `@orbit/core`, `@orbit/actors`, `@orbit/http`, and `@orbit/channels`, and adds `createWorker(App)` — a single call that boots an entire Orbit application on Cloudflare Workers.
+The umbrella package. Pulls in `@orbitstack/core`, `@orbitstack/actors`, `@orbitstack/http`, and `@orbitstack/channels`, and adds `createWorker(App)` — a single call that boots an entire Orbit application on Cloudflare Workers.
 
 If you're building an Orbit app, this is the only package you need to import from.
 
@@ -15,7 +15,7 @@ import {
   Actor,
   Handle,
   OrbitActor,
-} from "@orbit/app";
+} from "@orbitstack/app";
 
 @Actor("Counter")
 class CounterActor extends OrbitActor<{ n: number }> {
@@ -123,8 +123,8 @@ That's all the wiring you write.
 ## See also
 
 - [`../../AGENTS.md`](../../AGENTS.md) — agent checklist and self-check command
-- [`../../.cursor/skills/orbit/SKILL.md`](../../.cursor/skills/orbit/SKILL.md) — installable Orbit workflow skill
-- [`@orbit/core`](../core) — DI, `@OrbitApp`, tokens
-- [`@orbit/actors`](../actors) — `@Actor`, `OrbitActor`, `ActorRegistry`
-- [`@orbit/http`](../http) — `@Resource`, `@Controller`, `bearer`, router
-- [`@orbit/channels`](../channels) — `@Channel`, `OrbitChannel`, sockets
+- [`../../.cursor/skills/orbitstack/SKILL.md`](../../.cursor/skills/orbitstack/SKILL.md) — installable Orbit workflow skill
+- [`@orbitstack/core`](../core) — DI, `@OrbitApp`, tokens
+- [`@orbitstack/actors`](../actors) — `@Actor`, `OrbitActor`, `ActorRegistry`
+- [`@orbitstack/http`](../http) — `@Resource`, `@Controller`, `bearer`, router
+- [`@orbitstack/channels`](../channels) — `@Channel`, `OrbitChannel`, sockets

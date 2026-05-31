@@ -1,5 +1,5 @@
 /**
- * `orbit generate <type> <name>` — Code generation.
+ * `orbitstack generate <type> <name>` — Code generation.
  */
 
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -18,14 +18,14 @@ export async function generate(args: string[]): Promise<void> {
 
   if (!type || !name) {
     console.error(
-      "Usage: orbit generate <actor|controller|channel|service> <Name>",
+      "Usage: orbitstack generate <actor|controller|channel|service> <Name>",
     );
     console.error("");
     console.error("Examples:");
-    console.error("  orbit generate actor ChatRoom");
-    console.error("  orbit generate controller Users");
-    console.error("  orbit generate channel RoomChannel");
-    console.error("  orbit generate service Auth");
+    console.error("  orbitstack generate actor ChatRoom");
+    console.error("  orbitstack generate controller Users");
+    console.error("  orbitstack generate channel RoomChannel");
+    console.error("  orbitstack generate service Auth");
     process.exit(1);
   }
 
@@ -56,7 +56,7 @@ function generateActor(name: string, _args: string[]): void {
 
   writeFileSync(
     join(dir, `${kebab}.actor.ts`),
-    `import { Actor, Handle, OrbitActor, defineActorMessages } from '@orbit/app';
+    `import { Actor, Handle, OrbitActor, defineActorMessages } from '@orbitstack/app';
 
 const ${name.toUpperCase()}_MESSAGES = defineActorMessages({
   EXAMPLE: '${kebab}.example',
@@ -93,7 +93,7 @@ function generateController(name: string, _args: string[]): void {
 
   writeFileSync(
     join(dir, `${kebab}.controller.ts`),
-    `import { Resource, Get, Post, Param, Body } from '@orbit/app';
+    `import { Resource, Get, Post, Param, Body } from '@orbitstack/app';
 
 @Resource('/${kebab}')
 export class ${name}Controller {
@@ -131,7 +131,7 @@ function generateChannel(name: string, _args: string[]): void {
 
   writeFileSync(
     join(dir, `${kebab}.channel.ts`),
-    `import { Channel, On, OrbitChannel, type Socket } from '@orbit/app';
+    `import { Channel, On, OrbitChannel, type Socket } from '@orbitstack/app';
 
 @Channel('${kebab}:*')
 export class ${name}Channel extends OrbitChannel {
@@ -157,7 +157,7 @@ function generateService(name: string, _args: string[]): void {
 
   writeFileSync(
     join(dir, `${kebab}.service.ts`),
-    `import { Injectable } from '@orbit/app';
+    `import { Injectable } from '@orbitstack/app';
 
 @Injectable()
 export class ${name}Service {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { wrapActor } from './do-wrapper.js';
 import { Actor, Handle, OnAlarm } from './decorators.js';
 import { OrbitActor } from './actor.js';
-import { MockDurableObjectState } from '@orbit/testing';
+import { MockDurableObjectState } from '@orbitstack/testing';
 
 @Actor('Counter')
 class CounterActor extends OrbitActor<{ n: number }> {

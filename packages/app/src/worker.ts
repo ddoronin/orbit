@@ -26,14 +26,14 @@ import {
   type OrbitHandler,
   type EnvBindings,
   type ChannelRoute,
-} from '@orbit/core';
+} from '@orbitstack/core';
 import {
   ActorRegistry,
   ACTOR_REGISTRY_TOKEN,
   composeDurableObject,
   ORBIT_ACTOR_META,
   type DurableObjectLike,
-} from '@orbit/actors';
+} from '@orbitstack/actors';
 import {
   Router,
   registerControllers,
@@ -41,8 +41,8 @@ import {
   requestLogger,
   securityHeaders,
   type RequestContext,
-} from '@orbit/http';
-import { ChannelHandler } from '@orbit/channels';
+} from '@orbitstack/http';
+import { ChannelHandler } from '@orbitstack/channels';
 
 export type OrbitWorker = OrbitHandler & Record<string, DurableObjectLike>;
 

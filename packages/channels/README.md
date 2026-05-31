@@ -1,4 +1,4 @@
-# @orbit/channels
+# @orbitstack/channels
 
 Phoenix-style WebSocket channels backed by Durable Objects. Topic-based routing, JSON wire protocol, integration with `OrbitActor`.
 
@@ -13,7 +13,7 @@ If you just need broadcast on state change, the actor's built-in WebSocket dispa
 ## Defining a channel
 
 ```ts
-import { Channel, On, OrbitChannel, type Socket } from '@orbit/channels';
+import { Channel, On, OrbitChannel, type Socket } from '@orbitstack/channels';
 
 @Channel('room:*')
 export class RoomChannel extends OrbitChannel {
@@ -57,8 +57,8 @@ Replies use the same `ref` the client sent. Broadcasts have `ref: null`. Heartbe
 ## Mounting on an actor's DO
 
 ```ts
-import { composeDurableObject } from '@orbit/actors';
-import { ChannelHandler } from '@orbit/channels';
+import { composeDurableObject } from '@orbitstack/actors';
+import { ChannelHandler } from '@orbitstack/channels';
 
 export const Room = composeDurableObject(RoomActor, {
   channels: [RoomChannel],
@@ -66,7 +66,7 @@ export const Room = composeDurableObject(RoomActor, {
 });
 ```
 
-With `@orbit/app`, do this declaratively:
+With `@orbitstack/app`, do this declaratively:
 
 ```ts
 @OrbitApp({
@@ -99,10 +99,10 @@ interface Socket {
 
 ## Client
 
-See [`@orbit/client`](../client) — `OrbitSocket` with join/leave, replies, reconnect, heartbeat.
+See [`@orbitstack/client`](../client) — `OrbitSocket` with join/leave, replies, reconnect, heartbeat.
 
 ## See also
 
-- [`@orbit/actors`](../actors) — `OrbitActor`, `composeDurableObject`
-- [`@orbit/app`](../app) — `@OrbitApp.channels` auto-wiring
-- [`@orbit/client`](../client) — browser/Node WebSocket client
+- [`@orbitstack/actors`](../actors) — `OrbitActor`, `composeDurableObject`
+- [`@orbitstack/app`](../app) — `@OrbitApp.channels` auto-wiring
+- [`@orbitstack/client`](../client) — browser/Node WebSocket client

@@ -4,8 +4,8 @@ import {
   createWorker,
   bearer,
   D1_TOKEN,
-} from "@orbit/app";
-import { createQueueHandler } from "@orbit/queues";
+} from "@orbitstack/app";
+import { createQueueHandler } from "@orbitstack/queues";
 import { WorkspaceActor } from "./workspace.actor.js";
 import { PageActor } from "./page.actor.js";
 import { WorkspaceController } from "./workspace.controller.js";

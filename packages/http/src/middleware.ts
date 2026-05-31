@@ -2,7 +2,7 @@
  * Built-in middleware for common use cases.
  */
 
-import { createTraceContext, Logger } from '@orbit/core';
+import { createTraceContext, Logger } from '@orbitstack/core';
 import type { MiddlewareFn, RequestContext } from './router.js';
 
 // WebSocket upgrade responses (101 + webSocket field) have immutable headers in

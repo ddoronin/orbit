@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Container } from '@orbit/core';
+import { Container } from '@orbitstack/core';
 import { Router } from './router.js';
 import { Controller, Get, Post, Param, Body, Query, Header, Ctx, Auth } from './controller.js';
 import { registerController, registerControllers } from './controller-loader.js';

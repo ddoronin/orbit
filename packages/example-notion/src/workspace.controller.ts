@@ -11,7 +11,7 @@ import {
   ACTOR_REGISTRY_TOKEN,
   NotFoundException,
   bearer,
-} from "@orbit/app";
+} from "@orbitstack/app";
 import { WorkspaceActor } from "./workspace.actor.js";
 import {
   SHARED_WORKSPACE_ID,

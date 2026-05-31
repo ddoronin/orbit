@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createTestActor } from "@orbit/testing";
+import { createTestActor } from "@orbitstack/testing";
 import { WorkspaceActor } from "./workspace.actor.js";
 import type { WorkspaceState } from "./types.js";
 

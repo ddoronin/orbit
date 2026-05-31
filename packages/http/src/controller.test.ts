@@ -22,7 +22,7 @@ import {
   getParamsMeta,
   ORBIT_PARAM_META,
 } from './controller.js';
-import { ORBIT_INJECTABLE_META } from '@orbit/core';
+import { ORBIT_INJECTABLE_META } from '@orbitstack/core';
 
 describe('@Controller', () => {
   it('stores prefix with leading slash', () => {

@@ -92,7 +92,7 @@ There are no `*.module.ts` files, no `*.service.ts` files, no DI configuration f
 Open `src/page.actor.ts`. Here's the trimmed shape:
 
 ```ts
-import { Actor, Handle, OrbitActor } from "@orbit/app";
+import { Actor, Handle, OrbitActor } from "@orbitstack/app";
 
 @Actor("Page")
 export class PageActor extends OrbitActor<PageState> {
@@ -173,7 +173,7 @@ import {
   ActorRegistry,
   ACTOR_REGISTRY_TOKEN,
   bearer,
-} from "@orbit/app";
+} from "@orbitstack/app";
 
 @Resource("/pages", { guards: [bearer("SESSIONS")] })
 export class PageController {
@@ -244,7 +244,7 @@ await this.actors
 This is the whole entry point of the application, `src/index.ts`:
 
 ```ts
-import { OrbitApp, createWorker, bearer } from "@orbit/app";
+import { OrbitApp, createWorker, bearer } from "@orbitstack/app";
 import { WorkspaceActor } from "./workspace.actor.js";
 import { PageActor } from "./page.actor.js";
 import { WorkspaceController } from "./workspace.controller.js";
@@ -294,7 +294,7 @@ One call. It returns a value that:
 1. Implements `{ fetch, queue? }` — the Worker default export.
 2. Has every actor's DO class hanging off it, keyed by `@Actor` name. So `worker.Workspace` is the `WorkspaceActor`'s DO class.
 
-`export default worker` makes the worker handle HTTP requests. `export const { Workspace, Page } = worker` exposes the DO classes so wrangler can bind them. You repeat each name once because Cloudflare requires DO class names to be statically reachable from the module — there's no way to spread them dynamically. (A future `@orbit/build` step can eliminate that repetition.)
+`export default worker` makes the worker handle HTTP requests. `export const { Workspace, Page } = worker` exposes the DO classes so wrangler can bind them. You repeat each name once because Cloudflare requires DO class names to be statically reachable from the module — there's no way to spread them dynamically. (A future `@orbitstack/build` step can eliminate that repetition.)
 
 ### What happened inside `createWorker`
 
@@ -715,7 +715,7 @@ Before deploying to Cloudflare, swap the placeholder KV id in `wrangler.toml` fo
 ```sh
 npx wrangler kv namespace create SESSIONS
 # paste the returned id into the [[kv_namespaces]] block, then:
-npm --workspace @orbit/example-notion run deploy
+npm --workspace @orbitstack/example-notion run deploy
 ```
 
 ---
@@ -724,11 +724,11 @@ npm --workspace @orbit/example-notion run deploy
 
 You now understand the framework's core surface. To go deeper:
 
-- **Read [`@orbit/app`](../app/README.md)** — the umbrella package. `createWorker` lives there.
-- **Read [`@orbit/actors`](../actors/README.md)** — actor lifecycle, persistence, channels integration.
-- **Read [`@orbit/http`](../http/README.md)** — router internals, the middleware/guard/pipe pipeline.
-- **Read [`@orbit/channels`](../channels/README.md)** — Phoenix-style channels for richer WebSocket semantics (join/leave, replies, multiple topics per DO). The Notion example uses raw actor broadcasts; for larger apps you'll want channels.
-- **Read [`@orbit/testing`](../testing/README.md)** — `createTestActor` lets you unit-test actor handlers without a Worker runtime.
+- **Read [`@orbitstack/app`](../app/README.md)** — the umbrella package. `createWorker` lives there.
+- **Read [`@orbitstack/actors`](../actors/README.md)** — actor lifecycle, persistence, channels integration.
+- **Read [`@orbitstack/http`](../http/README.md)** — router internals, the middleware/guard/pipe pipeline.
+- **Read [`@orbitstack/channels`](../channels/README.md)** — Phoenix-style channels for richer WebSocket semantics (join/leave, replies, multiple topics per DO). The Notion example uses raw actor broadcasts; for larger apps you'll want channels.
+- **Read [`@orbitstack/testing`](../testing/README.md)** — `createTestActor` lets you unit-test actor handlers without a Worker runtime.
 
 ### Common next steps for this example
 

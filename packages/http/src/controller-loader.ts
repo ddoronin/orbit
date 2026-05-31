@@ -2,7 +2,7 @@
  * Controller loader — registers controller routes on a Router instance.
  */
 
-import { Container } from '@orbit/core';
+import { Container } from '@orbitstack/core';
 import { Router, type RequestContext } from './router.js';
 import {
   getControllerMeta,

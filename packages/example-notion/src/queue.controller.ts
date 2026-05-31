@@ -6,8 +6,8 @@ import {
   ENV_TOKEN,
   BadRequestException,
   InternalServerErrorException,
-} from "@orbit/app";
-import { QueueProducer } from "@orbit/queues";
+} from "@orbitstack/app";
+import { QueueProducer } from "@orbitstack/queues";
 import type { LoginAuditEvent } from "./types.js";
 
 @Resource("/queue")

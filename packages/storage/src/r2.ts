@@ -2,7 +2,7 @@
  * R2 bucket wrapper with typed access.
  */
 
-import { Injectable, Inject, R2_TOKEN } from '@orbit/core';
+import { Injectable, Inject, R2_TOKEN } from '@orbitstack/core';
 
 @Injectable()
 export class R2Service {

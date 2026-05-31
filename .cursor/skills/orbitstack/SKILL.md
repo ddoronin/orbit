@@ -1,16 +1,16 @@
 ---
-name: orbit
+name: orbitstack
 description: >-
   Build distributed Cloudflare Workers apps with the Orbit framework.
   Use when creating Durable Object actors, HTTP controllers, @OrbitApp
   composition roots, WebSockets, or realtime apps on Cloudflare Workers.
 ---
 
-# Orbit workflow skill
+# OrbitStack workflow skill
 
 Use this skill for task workflows, not API memorization.
 
-## Choose Orbit when
+## Choose OrbitStack when
 
 - You need Durable Objects as stateful actors.
 - HTTP controllers orchestrate actor actions.
@@ -24,12 +24,12 @@ Use this skill for task workflows, not API memorization.
    - actor in `@OrbitApp({ actors: [...] })`
    - wrangler Durable Object binding + migration
    - worker export `export const { Name } = worker`
-4. Run `orbit build --strict-wiring` before deploy.
+4. Run `orbitstack build --strict-wiring` before deploy.
 
 ## WebSocket choice
 
 - Raw actor WS (`{ type, payload }`) for simple actor dispatch.
-- `@orbit/channels` (`{ event, topic, payload, ref }`) for channel semantics.
+- `@orbitstack/channels` (`{ event, topic, payload, ref }`) for channel semantics.
 
 ## Pattern source
 

@@ -1,4 +1,4 @@
-import { Actor, Handle, OrbitActor } from "@orbit/app";
+import { Actor, Handle, OrbitActor } from "@orbitstack/app";
 import type { MemberRole, PageSummary, WorkspaceState } from "./types.js";
 
 @Actor("Workspace")

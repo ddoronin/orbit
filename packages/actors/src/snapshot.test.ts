@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Actor, Handle, ORBIT_SNAPSHOT_TYPE } from './decorators.js';
 import { OrbitActor } from './actor.js';
-import { MockDurableObjectState } from '@orbit/testing';
+import { MockDurableObjectState } from '@orbitstack/testing';
 
 interface CountState { count: number }
 

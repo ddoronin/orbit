@@ -2,7 +2,7 @@
  * esbuild plugin for Orbit.
  *
  * Handles:
- * 1. Resolving @orbit/* imports
+ * 1. Resolving @orbitstack/* imports
  * 2. Generating DO wrapper classes
  * 3. Bundling the worker entry point
  */

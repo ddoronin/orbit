@@ -1,4 +1,4 @@
-# Orbit Skill Reference Links
+# OrbitStack Skill Reference Links
 
 - Root conventions: `AGENTS.md`
 - Root onboarding: `README.md`

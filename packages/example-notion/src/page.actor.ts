@@ -1,4 +1,4 @@
-import { Actor, Handle, OnAlarm, OrbitActor } from "@orbit/app";
+import { Actor, Handle, OnAlarm, OrbitActor } from "@orbitstack/app";
 import { orderKeyAfter, orderKeyBetween } from "./ordering.js";
 import type { Block, BlockType, PageState, PresenceEntry } from "./types.js";
 

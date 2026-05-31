@@ -1,5 +1,5 @@
 /**
- * `orbit dev` — Start development server.
+ * `orbitstack dev` — Start development server.
  * Wraps wrangler dev with Orbit build integration.
  */
 

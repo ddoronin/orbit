@@ -1,4 +1,4 @@
-# @orbit/actors
+# @orbitstack/actors
 
 Actor abstraction over Cloudflare Durable Objects. Each `@Actor` class becomes a DO; messages are dispatched by `@Handle` decorators; state is auto-persisted; WebSockets are managed via the DO Hibernation API.
 
@@ -21,7 +21,7 @@ import {
   OnAlarm,
   OrbitActor,
   defineActorMessages,
-} from "@orbit/actors";
+} from "@orbitstack/actors";
 
 interface RoomState {
   messages: string[];
@@ -61,7 +61,7 @@ State auto-persists after every successful handler. To opt out, use `@Actor('Roo
 ## Calling an actor
 
 ```ts
-import { ActorRegistry, ACTOR_REGISTRY_TOKEN } from "@orbit/actors";
+import { ActorRegistry, ACTOR_REGISTRY_TOKEN } from "@orbitstack/actors";
 
 @Injectable()
 class RoomService {
@@ -87,7 +87,7 @@ Every `@Actor` class automatically registers a handler for `__orbit.snapshot__` 
 
 The DO accepts WebSocket upgrades via `this.acceptWebSocket(ws)`. Incoming string messages are parsed as `{ type, payload }` and dispatched to the matching `@Handle`. `this.broadcast(event, payload)` sends to every connected socket; `this.broadcastExcept(ws, event, payload)` skips one.
 
-For richer WebSocket semantics (topic-based join/leave, presence, replies), use [`@orbit/channels`](../channels) and bridge via `composeDurableObject(ActorClass, { channels, buildHandler })` — or just declare a `ChannelRoute` in `@OrbitApp` and let `createWorker` wire it up.
+For richer WebSocket semantics (topic-based join/leave, presence, replies), use [`@orbitstack/channels`](../channels) and bridge via `composeDurableObject(ActorClass, { channels, buildHandler })` — or just declare a `ChannelRoute` in `@OrbitApp` and let `createWorker` wire it up.
 
 ## DO class generation
 
@@ -97,12 +97,12 @@ For richer WebSocket semantics (topic-based join/leave, presence, replies), use 
 export const Room = composeDurableObject(RoomActor);
 ```
 
-`createWorker(App)` from [`@orbit/app`](../app) does this automatically for every actor in `@OrbitApp.actors`.
+`createWorker(App)` from [`@orbitstack/app`](../app) does this automatically for every actor in `@OrbitApp.actors`.
 
 ## Testing
 
 ```ts
-import { createTestActor } from "@orbit/testing";
+import { createTestActor } from "@orbitstack/testing";
 
 const handle = await createTestActor(RoomActor);
 await handle.call("send", { text: "hi" });
@@ -112,6 +112,6 @@ await handle.triggerAlarm();
 
 ## See also
 
-- [`@orbit/channels`](../channels) — typed WebSocket channels backed by actors
-- [`@orbit/app`](../app) — auto-wiring via `@OrbitApp.actors`
-- [`@orbit/testing`](../testing) — actor test utilities
+- [`@orbitstack/channels`](../channels) — typed WebSocket channels backed by actors
+- [`@orbitstack/app`](../app) — auto-wiring via `@OrbitApp.actors`
+- [`@orbitstack/testing`](../testing) — actor test utilities

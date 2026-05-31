@@ -2,7 +2,7 @@
  * KV namespace wrapper with typed access.
  */
 
-import { Injectable, Inject, KV_TOKEN } from '@orbit/core';
+import { Injectable, Inject, KV_TOKEN } from '@orbitstack/core';
 
 /**
  * Typed KV store wrapper.

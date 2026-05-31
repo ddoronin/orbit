@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { composeDurableObject } from './do-compose.js';
 import { Actor, Handle } from './decorators.js';
 import { OrbitActor } from './actor.js';
-import { MockDurableObjectState } from '@orbit/testing';
+import { MockDurableObjectState } from '@orbitstack/testing';
 
 @Actor('Doc')
 class DocActor extends OrbitActor<{ ok: boolean }> {

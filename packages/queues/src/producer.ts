@@ -2,7 +2,7 @@
  * Queue producer — typed wrapper around CF Queue.send().
  */
 
-import { Injectable, Inject, QUEUE_TOKEN, createToken } from '@orbit/core';
+import { Injectable, Inject, QUEUE_TOKEN, createToken } from '@orbitstack/core';
 
 export class QueueProducer<T = unknown> {
   constructor(private queue: any) {}

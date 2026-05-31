@@ -5,7 +5,7 @@
  * typed, ergonomic access to actors.
  */
 
-import { ActorError } from '@orbit/core';
+import { ActorError } from '@orbitstack/core';
 import { ORBIT_ACTOR_META, type MessageEnvelope, type MessageResult } from './types.js';
 import { ORBIT_SNAPSHOT_TYPE } from './decorators.js';
 import type { OrbitActor } from './actor.js';

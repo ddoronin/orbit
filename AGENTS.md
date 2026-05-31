@@ -2,7 +2,7 @@
 
 ## Start Here
 
-- Prefer `@orbit/app` for application code.
+- Prefer `@orbitstack/app` for application code.
 - Copy working patterns from `packages/example-notion`.
 - Treat this file and the root README as source of truth for app wiring.
 
@@ -28,7 +28,7 @@ export const { Name } = worker;
 ## WebSockets Decision
 
 - Raw actor WS: use `{ type, payload }` with actor handlers.
-- Phoenix channels: use `@orbit/channels` (`event/topic/payload/ref`).
+- Phoenix channels: use `@orbitstack/channels` (`event/topic/payload/ref`).
 - Do not mix the two wire formats.
 
 ## Common Failures
@@ -42,10 +42,10 @@ export const { Name } = worker;
 After editing actors, wrangler bindings, or worker exports, run:
 
 ```bash
-orbit build --strict-wiring
+orbitstack build --strict-wiring
 ```
 
 ## Repo Conventions
 
-- Application imports should come from `@orbit/app` unless extending framework internals.
+- Application imports should come from `@orbitstack/app` unless extending framework internals.
 - Keep all app registrations in one `@OrbitApp` composition root.

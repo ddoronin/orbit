@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Container } from '@orbit/core';
+import { Container } from '@orbitstack/core';
 import { QueueConsumer, OrbitConsumer, type QueueMessage } from './consumer.js';
 import { createQueueHandler } from './handler.js';
 

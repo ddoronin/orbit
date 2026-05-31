@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Container, ENV_TOKEN, UnauthorizedException } from '@orbit/core';
+import { Container, ENV_TOKEN, UnauthorizedException } from '@orbitstack/core';
 import { bearer, authOf } from './auth.js';
 
 class MockKV {

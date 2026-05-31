@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createTestActor } from "@orbit/testing";
+import { createTestActor } from "@orbitstack/testing";
 import { PageActor } from "./page.actor.js";
 import type { Block, PageState } from "./types.js";
 

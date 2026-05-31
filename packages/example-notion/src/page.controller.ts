@@ -13,7 +13,7 @@ import {
   NotFoundException,
   ForbiddenException,
   bearer,
-} from "@orbit/app";
+} from "@orbitstack/app";
 import { PageActor } from "./page.actor.js";
 import { WorkspaceActor } from "./workspace.actor.js";
 import {

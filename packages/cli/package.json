@@ -1,12 +1,12 @@
 {
-  "name": "@orbit/cli",
+  "name": "@orbitstack/cli",
   "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": ">=23 <24"
   },
   "bin": {
-    "orbit": "dist/bin.js"
+    "orbitstack": "dist/bin.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@orbit/core": "*",
-    "@orbit/build": "*",
+    "@orbitstack/core": "*",
+    "@orbitstack/build": "*",
     "esbuild": "^0.24.0"
   },
   "devDependencies": {

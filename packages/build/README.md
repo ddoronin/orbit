@@ -1,13 +1,13 @@
-# @orbit/build
+# @orbitstack/build
 
 Build-time helpers: codegen for app manifests and `wrangler.toml` bindings, plus an esbuild plugin.
 
-This package is optional. `createWorker(App)` already does everything at runtime via decorator metadata — you only need `@orbit/build` if you want:
+This package is optional. `createWorker(App)` already does everything at runtime via decorator metadata — you only need `@orbitstack/build` if you want:
 
 - Static DO export names (no `export const { ... } = worker` ceremony)
 - Auto-generated `wrangler.toml` bindings from `@Actor` decorators
 - A single-file bundled Worker for production deploys
-- An `orbit dev` watcher that re-bundles on file change
+- An `orbitstack dev` watcher that re-bundles on file change
 
 ## Codegen
 
@@ -17,7 +17,7 @@ import {
   generateDurableObjectClass,
   generateWorkerEntry,
   type AppManifest,
-} from '@orbit/build';
+} from '@orbitstack/build';
 ```
 
 - `generateWranglerBindings(manifest)` → TOML for DO classes, KV/D1/R2 namespaces, Queue producers/consumers.
@@ -27,7 +27,7 @@ import {
 ## esbuild plugin
 
 ```ts
-import { orbitPlugin, createBuildConfig } from '@orbit/build';
+import { orbitPlugin, createBuildConfig } from '@orbitstack/build';
 import esbuild from 'esbuild';
 
 await esbuild.build(createBuildConfig({
@@ -41,5 +41,5 @@ await esbuild.build(createBuildConfig({
 
 ## See also
 
-- [`@orbit/cli`](../cli) — uses this internally for `orbit build` and `orbit dev`
-- [`@orbit/app`](../app) — the runtime alternative
+- [`@orbitstack/cli`](../cli) — uses this internally for `orbitstack build` and `orbitstack dev`
+- [`@orbitstack/app`](../app) — the runtime alternative

@@ -1,11 +1,11 @@
-# @orbit/client
+# @orbitstack/client
 
 Browser/Node WebSocket client for Orbit Channels. Implements the Phoenix-compatible wire protocol with auto-reconnect and heartbeat.
 
 ## Quick start
 
 ```ts
-import { OrbitSocket } from '@orbit/client';
+import { OrbitSocket } from '@orbitstack/client';
 
 const socket = new OrbitSocket('wss://my-app.workers.dev/rooms/42/socket', {
   params: { token: localStorage.getItem('session')! },
@@ -70,5 +70,5 @@ When `reconnect: true`, the client retries with backoff up to `reconnectMaxAttem
 
 ## See also
 
-- [`@orbit/channels`](../channels) — server-side channel definition
-- [`@orbit/actors`](../actors) — actors backing each channel
+- [`@orbitstack/channels`](../channels) — server-side channel definition
+- [`@orbitstack/actors`](../actors) — actors backing each channel

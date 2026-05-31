@@ -2,7 +2,7 @@
  * Socket — represents a single WebSocket connection within a channel.
  */
 
-import type { ActorRef } from '@orbit/actors';
+import type { ActorRef } from '@orbitstack/actors';
 import { encodeMessage, broadcastMessage, type ServerMessage } from './protocol.js';
 
 export interface Socket {

@@ -5,7 +5,7 @@
  * for query building — Orbit only provides the DI glue.
  */
 
-import { Injectable, Inject, D1_TOKEN, createToken } from '@orbit/core';
+import { Injectable, Inject, D1_TOKEN, createToken } from '@orbitstack/core';
 
 export const DRIZZLE_TOKEN = createToken<any>('drizzle');
 

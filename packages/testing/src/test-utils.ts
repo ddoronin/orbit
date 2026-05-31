@@ -2,9 +2,9 @@
  * Test utilities for Orbit applications.
  */
 
-import { Container, buildAppGraph, buildContainer } from '@orbit/core';
-import { type OrbitActor, ORBIT_ACTOR_META, ORBIT_HANDLERS_META } from '@orbit/actors';
-import { Router } from '@orbit/http';
+import { Container, buildAppGraph, buildContainer } from '@orbitstack/core';
+import { type OrbitActor, ORBIT_ACTOR_META, ORBIT_HANDLERS_META } from '@orbitstack/actors';
+import { Router } from '@orbitstack/http';
 import {
   MockDurableObjectStorage,
   MockDurableObjectState,

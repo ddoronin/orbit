@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ActorRegistry } from './registry.js';
 import { Actor, Handle, ORBIT_SNAPSHOT_TYPE } from './decorators.js';
 import { OrbitActor } from './actor.js';
-import { ActorError } from '@orbit/core';
+import { ActorError } from '@orbitstack/core';
 
 @Actor('Thing')
 class ThingActor extends OrbitActor<{ count: number }> {

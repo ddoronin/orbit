@@ -1,4 +1,4 @@
-# @orbit/testing
+# @orbitstack/testing
 
 Test utilities and in-memory mocks for Orbit. No Miniflare or workerd runtime needed for unit tests.
 
@@ -12,7 +12,7 @@ Test utilities and in-memory mocks for Orbit. No Miniflare or workerd runtime ne
 ## Service test (DI container)
 
 ```ts
-import { createTestContainer } from "@orbit/testing";
+import { createTestContainer } from "@orbitstack/testing";
 
 const { container } = await createTestContainer(App, {
   overrides: [{ provide: ExternalService, useValue: { call: vi.fn() } }],
@@ -23,7 +23,7 @@ const userSvc = await container.resolve(UserService);
 ## Actor test
 
 ```ts
-import { createTestActor } from "@orbit/testing";
+import { createTestActor } from "@orbitstack/testing";
 import { CounterActor } from "./counter.actor.js";
 
 const counter = await createTestActor(CounterActor);
@@ -42,8 +42,8 @@ await counter.triggerAlarm();
 ## HTTP test
 
 ```ts
-import { createTestApp } from "@orbit/testing";
-import { router } from "@orbit/http";
+import { createTestApp } from "@orbitstack/testing";
+import { router } from "@orbitstack/http";
 
 const app = createTestApp(
   router().get("/health", (ctx) => ctx.json({ ok: true })),
@@ -55,9 +55,9 @@ expect(res.status).toBe(200);
 ## Controller integration test with overrides
 
 ```ts
-import { OrbitApp, Inject, Injectable } from "@orbit/core";
-import { Resource, Get, Router, registerControllers } from "@orbit/http";
-import { createTestApp, createTestContainer } from "@orbit/testing";
+import { OrbitApp, Inject, Injectable } from "@orbitstack/core";
+import { Resource, Get, Router, registerControllers } from "@orbitstack/http";
+import { createTestApp, createTestContainer } from "@orbitstack/testing";
 
 @Injectable()
 class UsersService {
@@ -114,5 +114,5 @@ Use them when you need to wire a test without spinning up Miniflare.
 
 ## See also
 
-- [`@orbit/app`](../app) — the apps you're testing
-- [`@orbit/actors`](../actors) — actor base class
+- [`@orbitstack/app`](../app) — the apps you're testing
+- [`@orbitstack/actors`](../actors) — actor base class

@@ -2,7 +2,7 @@
  * Controller decorators for declarative HTTP route definition.
  */
 
-import { Injectable, ORBIT_INJECTABLE_META } from '@orbit/core';
+import { Injectable, ORBIT_INJECTABLE_META } from '@orbitstack/core';
 import type { GuardFn, PipeFn, MiddlewareFn, HttpMethod } from './router.js';
 
 export const ORBIT_CONTROLLER_META = '__orbit_controller__';

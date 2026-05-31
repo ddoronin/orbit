@@ -1,5 +1,5 @@
-import { Inject, D1_TOKEN, InternalServerErrorException } from "@orbit/app";
-import { OrbitConsumer, QueueConsumer, type QueueMessage } from "@orbit/queues";
+import { Inject, D1_TOKEN, InternalServerErrorException } from "@orbitstack/app";
+import { OrbitConsumer, QueueConsumer, type QueueMessage } from "@orbitstack/queues";
 
 import type { LoginAuditEvent } from "./types.js";
 

@@ -2,7 +2,7 @@
  * Built-in authentication primitives.
  */
 
-import { UnauthorizedException, ENV_TOKEN } from '@orbit/core';
+import { UnauthorizedException, ENV_TOKEN } from '@orbitstack/core';
 import type { GuardFn, RequestContext } from './router.js';
 
 const AUTH_HEADER = 'authorization';

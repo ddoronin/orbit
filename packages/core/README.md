@@ -1,8 +1,8 @@
-# @orbit/core
+# @orbitstack/core
 
 The kernel of the framework. Provides the DI container, decorators, tokens, application graph, and Cloudflare Worker factory.
 
-If you're building an app, use [`@orbit/app`](../app) instead — it re-exports everything here and adds `createWorker`. Use `@orbit/core` directly when extending the framework or building a custom runtime composer.
+If you're building an app, use [`@orbitstack/app`](../app) instead — it re-exports everything here and adds `createWorker`. Use `@orbitstack/core` directly when extending the framework or building a custom runtime composer.
 
 ## What's in here
 
@@ -18,7 +18,7 @@ If you're building an app, use [`@orbit/app`](../app) instead — it re-exports 
 ## DI in one minute
 
 ```ts
-import { Injectable, Inject, KV_TOKEN, OrbitApp, Container, buildAppGraph, buildContainer } from '@orbit/core';
+import { Injectable, Inject, KV_TOKEN, OrbitApp, Container, buildAppGraph, buildContainer } from '@orbitstack/core';
 
 @Injectable()
 class Sessions {
@@ -54,10 +54,10 @@ No `Reflect.metadata` is used — decorators stash data in static properties so 
 ## When to use this directly
 
 - Writing a non-HTTP runtime (Queue-only, cron-only) and `createWorker`'s router auto-build is overkill.
-- Building a custom `@orbit/*` package that needs to introspect the app graph.
+- Building a custom `@orbitstack/*` package that needs to introspect the app graph.
 - Testing services in isolation with a hand-built container.
 
 ## See also
 
-- [`@orbit/app`](../app) — `createWorker(App)` and umbrella exports
-- [`@orbit/testing`](../testing) — `createTestContainer(App)` for unit tests
+- [`@orbitstack/app`](../app) — `createWorker(App)` and umbrella exports
+- [`@orbitstack/testing`](../testing) — `createTestContainer(App)` for unit tests

@@ -1,5 +1,5 @@
 {
-  "name": "@orbit/core",
+  "name": "@orbitstack/core",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",

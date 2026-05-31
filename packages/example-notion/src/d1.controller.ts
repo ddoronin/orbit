@@ -7,7 +7,7 @@ import {
   D1_TOKEN,
   BadRequestException,
   InternalServerErrorException,
-} from "@orbit/app";
+} from "@orbitstack/app";
 import type { LoginAuditEvent } from "./types.js";
 
 @Resource("/d1")

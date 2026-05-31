@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { OrbitApp, Injectable, Inject, createToken } from "@orbit/core";
-import { Actor, Handle, OnAlarm, OrbitActor } from "@orbit/actors";
-import { Resource, Get, Router, registerControllers } from "@orbit/http";
+import { OrbitApp, Injectable, Inject, createToken } from "@orbitstack/core";
+import { Actor, Handle, OnAlarm, OrbitActor } from "@orbitstack/actors";
+import { Resource, Get, Router, registerControllers } from "@orbitstack/http";
 import {
   createTestContainer,
   createTestActor,

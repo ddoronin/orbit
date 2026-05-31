@@ -7,4 +7,4 @@ globs:
 - Keep wrangler class_name values aligned with '@Actor("Name")' metadata.
 - Add matching '[[migrations]]' updates when introducing DO classes.
 - Ensure worker export list exposes the same DO names.
-- Run 'orbit build --strict-wiring' after wrangler edits.
+- Run 'orbitstack build --strict-wiring' after wrangler edits.

@@ -12,7 +12,7 @@ const HELP = `
 Orbit — Cloudflare-native distributed framework
 
 Usage:
-  orbit <command> [options]
+  orbitstack <command> [options]
 
 Commands:
   new <name>         Create a new Orbit project
@@ -25,7 +25,7 @@ Options:
   --help, -h         Show help
   --version, -v      Show version
 
-Run 'orbit <command> --help' for more information on a command.
+Run 'orbitstack <command> --help' for more information on a command.
 `;
 
 export async function run(args: string[]): Promise<void> {
@@ -37,7 +37,7 @@ export async function run(args: string[]): Promise<void> {
   }
 
   if (command === '--version' || command === '-v') {
-    console.log('orbit 0.1.0');
+    console.log('orbitstack 0.1.0');
     return;
   }
 

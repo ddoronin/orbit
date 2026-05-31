@@ -6,7 +6,7 @@ import {
   KV_TOKEN,
   BadRequestException,
   InternalServerErrorException,
-} from "@orbit/app";
+} from "@orbitstack/app";
 import type { Session } from "./types.js";
 
 /**

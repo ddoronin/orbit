@@ -1,5 +1,5 @@
 /**
- * `orbit deploy` — Deploy to Cloudflare.
+ * `orbitstack deploy` — Deploy to Cloudflare.
  * Runs build first, then delegates to wrangler deploy.
  */
 

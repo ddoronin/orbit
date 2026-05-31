@@ -1,4 +1,4 @@
-# @orbit/http
+# @orbitstack/http
 
 HTTP layer: radix-trie router, controller decorators, middleware/guard/pipe pipeline, and built-in auth primitives.
 
@@ -14,7 +14,7 @@ HTTP layer: radix-trie router, controller decorators, middleware/guard/pipe pipe
 ## Defining a controller
 
 ```ts
-import { Resource, Get, Post, Body, Param, Auth, bearer } from '@orbit/http';
+import { Resource, Get, Post, Body, Param, Auth, bearer } from '@orbitstack/http';
 
 @Resource('/posts', { guards: [bearer('SESSIONS')] })
 export class PostsController {
@@ -51,7 +51,7 @@ Errors propagate to the router; `HttpException` subclasses (`NotFoundException`,
 ## Auth
 
 ```ts
-import { bearer, authOf, Auth } from '@orbit/http';
+import { bearer, authOf, Auth } from '@orbitstack/http';
 
 @Resource('/admin', { guards: [bearer('SESSIONS')] })
 class AdminController {
@@ -65,7 +65,7 @@ class AdminController {
 ## Router (manual)
 
 ```ts
-import { router, cors, requestLogger } from '@orbit/http';
+import { router, cors, requestLogger } from '@orbitstack/http';
 
 const app = router()
   .use(requestLogger())
@@ -81,10 +81,10 @@ The route trie supports static (`/users`), parameter (`/users/:id`), and wildcar
 
 ## Controller registration
 
-Controllers register lazily — `registerControllers(router, [Ctrl], container)` adds routes that resolve the controller class through DI on every request. `createWorker` from [`@orbit/app`](../app) does this for every class in `@OrbitApp.controllers`.
+Controllers register lazily — `registerControllers(router, [Ctrl], container)` adds routes that resolve the controller class through DI on every request. `createWorker` from [`@orbitstack/app`](../app) does this for every class in `@OrbitApp.controllers`.
 
 ## See also
 
-- [`@orbit/app`](../app) — auto-router, `@OrbitApp({ controllers })`
-- [`@orbit/core`](../core) — DI tokens, errors
-- [`@orbit/channels`](../channels) — for `.ws()` routes that need typed channels
+- [`@orbitstack/app`](../app) — auto-router, `@OrbitApp({ controllers })`
+- [`@orbitstack/core`](../core) — DI tokens, errors
+- [`@orbitstack/channels`](../channels) — for `.ws()` routes that need typed channels

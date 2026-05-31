@@ -1,4 +1,4 @@
-# @orbit/storage
+# @orbitstack/storage
 
 Thin injectable wrappers around Cloudflare's storage primitives: D1, KV, R2.
 
@@ -23,7 +23,7 @@ For multiple bindings of the same kind, pass `{ default: 'DB', analytics: 'ANALY
 ## D1Service
 
 ```ts
-import { D1Service } from '@orbit/storage';
+import { D1Service } from '@orbitstack/storage';
 
 class UserRepo {
   constructor(@Inject(D1Service) private db: D1Service) {}
@@ -76,5 +76,5 @@ class Files {
 
 ## See also
 
-- [`@orbit/app`](../app) — `bindings` declaration
-- [`@orbit/core`](../core) — `D1_TOKEN`, `KV_TOKEN`, `R2_TOKEN`
+- [`@orbitstack/app`](../app) — `bindings` declaration
+- [`@orbitstack/core`](../core) — `D1_TOKEN`, `KV_TOKEN`, `R2_TOKEN`

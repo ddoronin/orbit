@@ -19,7 +19,7 @@ const orbitPackageAliases = [
   "storage",
   "testing",
 ].map((name) => ({
-  find: `@orbit/${name}`,
+  find: `@orbitstack/${name}`,
   replacement: fileURLToPath(
     new URL(`./packages/${name}/src/index.ts`, import.meta.url),
   ),

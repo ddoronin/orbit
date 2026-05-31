@@ -2,7 +2,7 @@
  * Queue handler — generates the queue() export for a Worker.
  */
 
-import { Container } from '@orbit/core';
+import { Container } from '@orbitstack/core';
 import {
   getQueueConsumerMeta,
   type OrbitConsumer,

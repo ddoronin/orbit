@@ -26,7 +26,7 @@ describe("runActorWiringPreflight", () => {
 
     writeFileSync(
       join(root, "src/main.ts"),
-      `import { OrbitApp, createWorker } from '@orbit/app';
+      `import { OrbitApp, createWorker } from '@orbitstack/app';
 import { ChatRoomActor } from './chat/chat.actor.js';
 
 @OrbitApp({ actors: [ChatRoomActor] })
@@ -40,7 +40,7 @@ export const { ChatRoom } = worker;
 
     writeFileSync(
       join(root, "src/chat/chat.actor.ts"),
-      `import { Actor, OrbitActor } from '@orbit/app';
+      `import { Actor, OrbitActor } from '@orbitstack/app';
 
 @Actor('ChatRoom')
 export class ChatRoomActor extends OrbitActor<any> {}
@@ -65,7 +65,7 @@ bindings = [
 
     writeFileSync(
       join(root, "src/main.ts"),
-      `import { OrbitApp, createWorker } from '@orbit/app';
+      `import { OrbitApp, createWorker } from '@orbitstack/app';
 import { ChatRoomActor } from './chat/chat.actor.js';
 
 @OrbitApp({ actors: [ChatRoomActor] })
@@ -77,7 +77,7 @@ export default createWorker(App);
 
     writeFileSync(
       join(root, "src/chat/chat.actor.ts"),
-      `import { Actor, OrbitActor } from '@orbit/app';
+      `import { Actor, OrbitActor } from '@orbitstack/app';
 
 @Actor('ChatRoom')
 export class ChatRoomActor extends OrbitActor<any> {}

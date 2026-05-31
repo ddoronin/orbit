@@ -66,6 +66,7 @@ export class PageActor extends OrbitActor<PageState> {
     parentBlockId?: string | null;
     afterBlockId?: string | null;
   }): Promise<Block> {
+    let effectiveAfterBlockId: string | null = null;
     const block: Block = {
       id: p.blockId,
       type: p.type,
@@ -77,13 +78,15 @@ export class PageActor extends OrbitActor<PageState> {
       const siblings = p.parentBlockId
         ? s.blocks[p.parentBlockId].children
         : s.rootBlockIds;
-      const at = p.afterBlockId
-        ? siblings.indexOf(p.afterBlockId) + 1
-        : siblings.length;
+      const afterIdx = p.afterBlockId ? siblings.indexOf(p.afterBlockId) : -1;
+      const at = afterIdx >= 0 ? afterIdx + 1 : siblings.length;
+      effectiveAfterBlockId = afterIdx >= 0 ? (p.afterBlockId ?? null) : null;
       siblings.splice(at, 0, block.id);
     });
     this.broadcast("page.block.inserted", {
       block,
+      parentBlockId: p.parentBlockId ?? null,
+      afterBlockId: effectiveAfterBlockId,
       version: this.state.version,
     });
     return block;

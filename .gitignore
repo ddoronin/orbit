@@ -144,3 +144,4 @@ vite.config.ts.timestamp-*
 .wrangler/
 var/
 .claude
+/packages/example-notion/public/assets/

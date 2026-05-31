@@ -2,15 +2,14 @@ name = "orbit-notion"
 main = "dist/index.js"
 compatibility_date = "2025-01-01"
 
-# Compile TypeScript before booting the dev server, and recompile on src changes.
+# Compile worker TypeScript. Frontend assets are built via npm scripts.
 [build]
 command = "npx tsc"
 cwd = "."
 watch_dir = "src"
 
-# Serve the Notion-like SPA from public/. Cloudflare's assets layer handles
-# GET requests that match a file (e.g. /, /styles.css, /app.js); everything
-# else (REST + WS) falls through to the Worker.
+# Serve generated SPA assets from public/. Everything not matched by static
+# assets (REST + WS) falls through to the Worker.
 [assets]
 directory = "./public"
 

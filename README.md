@@ -16,6 +16,10 @@ Try the live Notion-style example app: [Orbit Notion Demo](https://orbit-notion.
 
 ![Notion-style example app](notion-example.png)
 
+Try the live Postman-style example app: [Orbit Postman Demo](https://orbit-postman.doronindm.workers.dev/).
+
+![Postman-style example app](postman-example.png)
+
 ## Start Here
 
 - Build apps with `@orbitstack/app`.

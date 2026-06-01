@@ -1,0 +1,32 @@
+name = "orbit-postman"
+main = "dist/index.js"
+compatibility_date = "2025-01-01"
+
+[build]
+command = "npm run build:web && npx tsc"
+cwd = "."
+watch_dir = "src"
+
+[assets]
+directory = "./public"
+
+[[durable_objects.bindings]]
+name = "Workspace"
+class_name = "Workspace"
+
+[[durable_objects.bindings]]
+name = "Collection"
+class_name = "Collection"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Workspace", "Collection"]
+
+[[kv_namespaces]]
+binding = "ORBIT_POSTMAN_SESSIONS"
+id = "7faa985ef23b4e63ba7b07e355e294b1"
+
+[[d1_databases]]
+binding = "ORBIT_POSTMAN_DB"
+database_name = "orbit-postman-db"
+database_id = "8abc2823-78e6-4ab8-84f8-0d22691631b1"
